@@ -52,9 +52,9 @@
 
 ## 6. Data Model
 
-9 tables — users, profiles, games, game_tags, builds, build_tags, ratings, likes, comments, favorites — plus game_stats and build_stats aggregate views (powering Top 10 and compare numbers). Full DDL in db/schema.sql; seed content in db/content.js applied with `npm run db:seed` (8 games + tag vocabularies + 5 demo users + 10 credited builds).
+10 domain tables — users, profiles, games, game_tags, builds, build_tags, ratings, likes, comments, favorites — plus game_stats and build_stats aggregate views and a PostgreSQL session table (connect-pg-simple) (powering Top 10 and compare numbers). Full DDL in db/schema.sql; seed content in db/content.js applied with `npm run db:seed` (8 games + tag vocabularies + 5 demo users + 10 credited builds).
 
-**Tag system (3 layers):** game variant (Freeform / Interior / Renovation / City Planning / Sandbox) -> per-game style vocabulary -> tags on builds via build_tags.
+**Tag system (3 layers):** game variant (Freeform / Interior / Renovation / City Planning / Sandbox) is a per-build attribute (build_type, exactly one per build) -> per-game style vocabulary (game_tags) -> tags on builds via build_tags.
 
 ## 7. Auth & Permissions
 
