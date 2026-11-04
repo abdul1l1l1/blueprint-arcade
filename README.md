@@ -1,51 +1,55 @@
-# Blueprint Arcade 🏗️
+# Blueprint Arcade
 
-A fan website for the **architecture / build-game community** — the players of Welcome to Bloxburg, The Sims 4, House Flipper, Cities: Skylines, and more.
+Abdul's build-showcase site for architecture & build games — a high school AI-assisted web development project, set up with the same stack and workflow as QuizQuest.
 
-**The problem it solves:** architecture-game knowledge is scattered across Roblox wikis, the Sims Gallery, and separate city-builder communities. Blueprint Arcade is one hub to **discover games, compare them, and show off your own builds**.
+## What it is
+Players post builds (title, game, description, images, budget tier, tags), browse a showcase, favorite and rate builds, like and comment, compare games, and climb the Top 10 (rating x likes).
 
-## Panel of Experts
+## Tech stack
+- **Frontend:** plain HTML, CSS, JavaScript
+- **Server:** Node.js 24 LTS + Express 5 (serves static files and API routes)
+- **Database:** Replit PostgreSQL via pg (parameterized SQL)
+- **Auth:** express-session + connect-pg-simple + bcrypt
+- **AI development environment:** Replit Agent
+- **Source control:** GitHub
+- **Environments:** Replit workspace = QA · Replit Deployment = production (separate database)
 
-| Expert | Role |
+## Project structure
+```
+├── public/            # Frontend pages (index=Build Showcase, games, game, compare, top10, post, profile, login, register)
+│   ├── css/styles.css # Design system (baby blue / terracotta, flat cards, no emojis)
+│   └── js/            # api.js fetch helpers, app.js shared shell (dark mode, toasts)
+├── routes/           # auth, builds, games, social (likes/comments/ratings/favorites), stats (top10/profile)
+├── db/                # pool.js, schema.sql, init.js, content.js (seed data), seed.js
+├── server.js          # Express entry point
+├── docs/              # requirements.md, spec.md, design.md
+└── agent-development.md  # Phase-by-phase build contract for the AI agent
+```
+
+## Getting started
+```bash
+git clone https://github.com/abdul1l1l1/blueprint-arcade.git
+cd blueprint-arcade
+npm install
+cp .env.example .env   # fill in DATABASE_URL + SESSION_SECRET
+npm run db:init        # create tables
+npm run db:seed        # 8 games, 5 demo users, 10 credited builds
+npm start              # http://localhost:5000
+```
+
+## Development phases
+| Phase | Focus |
 |---|---|
-| **FroggyHopz** (Game Director, Welcome to Bloxburg) | Player-first design; the Bloxburg scene |
-| **Phil — City Planner Plays** (professional urban planner) | Credibility & domain depth |
-| **James Turner — The Sim Supply** (EA-commissioned Sims builder) | Build showcase UX & community |
-| **Simone — UX / Full-Stack Product Designer** | Maps fan features to MVP requirements |
+| 1 | Setup, database schema, authentication (bcrypt, sessions) |
+| 2 | Game Directory + Game Detail + tag vocabularies |
+| 3 | Build Showcase CRUD, Post a Build, Profile (max 3 pinned) |
+| 4 | Likes, comments, ratings, favorites, Top 10, Compare |
+| 5 | Dark mode, responsive polish, deployment |
 
-## MVP Checklist
+Each phase is built on an isolated branch and merged to main after QA tests pass and student approval (see agent-development.md).
 
-- [x] Clear purpose & target audience (build-game fandom)
-- [x] Database & persistence — Supabase (PostgreSQL): `db/schema.sql`, `db/seed.sql`
-- [x] User accounts & auth (registration / login / logout, protected actions via RLS)
-- [x] 5+ domain views: Build Showcase (landing) · Game Directory · Game Detail · Compare · Top 10 (+ Profile bonus)
-- [x] Navigation — category sidebar + top action bar
-- [x] Full CRUD on **Builds** (post / edit / delete / pin, owner-only)
-- [x] Meaningful seed content — 8 real games + 10 credited builds
-- [x] Search & filtering (keyword, variant, style tags, sorting)
-- [x] Fan-specific interactive feature — game comparison tool + Top 10 ranking
-- [x] Responsive design
-- [x] Validation & feedback (form validation, toasts, empty states)
-- [ ] Deployment (Vercel)
-
-## 10 Custom Features
-
-Search Bar · Category Filters · Sorting Options · Favorites Button · Star Rating System · Image Carousel · Like + Comment on Builds · Dark/Light Mode · Top 10 Builds List · Comparison Tool
-
-## Tech Stack
-
-Next.js + Supabase (PostgreSQL, Auth) + Tailwind CSS · deployed on Vercel
-
-## Project Structure
-
-```
-db/
-  schema.sql   -- 9 tables, views, indexes, row-level security policies
-  seed.sql     -- 8 games + tag vocabularies + 10 credited builds
-docs/
-  design.md    -- concept, features, brand style
-```
-
-## Brand
-
-Baby blue `#89CFF0` · slate blue `#6C9BD1` · ink navy `#12233B` · terracotta `#E07A5F` (CTA) · paper white `#F7F9FB`. Clean, minimal drafting aesthetic.
+## Documentation
+- [docs/requirements.md](docs/requirements.md) — mandatory project requirements (source of truth)
+- [docs/spec.md](docs/spec.md) — approved Spec Doc
+- [docs/design.md](docs/design.md) — concept, views, tag system, design principles
+- [agent-development.md](agent-development.md) — agent contract, phases, Git workflow
