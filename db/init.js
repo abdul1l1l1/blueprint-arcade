@@ -5,15 +5,32 @@ const fs = require('fs');
 const path = require('path');
 const { pool } = require('./pool');
 
-async function main() {
+async function initialize(database = pool) {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-  console.log('Running schema.sql ...');
-  await pool.query(schema);
-  console.log('Schema ready.');
-  await pool.end();
+  const client = await database.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(schema);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
-main().catch((err) => {
-  console.error('db:init failed:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  const run = process.env.NODE_ENV === 'production'
+    ? Promise.reject(new Error('Schema initialization is QA-only.'))
+    : initialize();
+  run
+    .then(() => console.info('Schema ready (existing data preserved).'))
+    .catch(() => {
+      console.error('db:init failed. Check schema compatibility and database configuration.');
+      process.exitCode = 1;
+    })
+    .finally(() => pool.end());
+}
+
+module.exports = { initialize };

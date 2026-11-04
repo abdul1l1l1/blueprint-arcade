@@ -9,6 +9,18 @@ CREATE TABLE IF NOT EXISTS users (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Preserve display case; identifiers must still be unique ignoring case.
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_ci ON users (lower(username));
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_ci ON users (lower(email));
+
+-- Initialized explicitly with db:init, never by a production startup hook.
+CREATE TABLE IF NOT EXISTS "session" (
+  sid VARCHAR PRIMARY KEY,
+  sess JSON NOT NULL,
+  expire TIMESTAMP(6) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS session_expire_idx ON "session" (expire);
+
 CREATE TABLE IF NOT EXISTS profiles (
   user_id   UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   display_name TEXT NOT NULL,

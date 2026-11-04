@@ -1,4 +1,5 @@
-// Seed data for Blueprint Arcade (games, tag vocabularies, demo users, credited builds)
+// Original project demo content and fictional demo users; not real creators' builds.
+// Image screenshots are deferred to Phase 3 by approval.
 
 const games = [
   { slug: 'bloxburg',  name: 'Welcome to Bloxburg',  genre: 'Life sim / building', release_year: 2016, is_sandbox: false,
@@ -27,7 +28,7 @@ const games = [
     tags: ['Starter Base', 'Medieval', 'Modern', 'Megabuild'] },
 ];
 
-// Demo members; passwords are set by db/seed.js (bcrypt-hashed, placeholder values)
+// Demo members; db/seed.js bcrypt-hashes SEED_PASSWORD from Replit Secrets.
 const users = [
   { username: 'abdul_builds', email: 'abdul@blueprintarcade.dev', display_name: 'Abdul', bio: 'Bloxburg builder — modern builds, no-cheats only. I love showing off my builds and getting feedback.' },
   { username: 'simmer99',    email: 'simmer99@blueprintarcade.dev',  display_name: 'simmer99',  bio: 'Tiny home addict. Sims 4 builder since 2014.' },

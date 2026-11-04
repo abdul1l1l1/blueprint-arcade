@@ -37,6 +37,36 @@ npm run db:seed        # 8 games, 5 demo users, 10 credited builds
 npm start              # http://localhost:5000
 ```
 
+In Replit, use Secrets rather than creating `.env`: `DATABASE_URL` is managed by
+Replit, and `SESSION_SECRET` and `SEED_PASSWORD` must be set securely. No password
+or session-secret fallback exists. Missing configuration stops startup/seeding.
+
+## Phase 1 QA
+
+Run `npm test` for the Phase 1 integration and frontend-handler checks. These
+require the QA database and must not run against production. Tests create
+separate `qa_p1_*` schemas with synthetic fixtures, retained for inspection;
+they do not delete or overwrite existing public QA data. Test passwords are
+generated in memory and never printed or committed.
+
+`npm run db:init` is transactional and preserves existing tables/data.
+`npm run db:seed` is QA-only and transactional: it either adds a complete seed,
+verifies an existing complete seed without changing it, or reports incomplete
+seed data and leaves it untouched. Never drop tables to reseed.
+
+All 10 builds are original demo content created for this project and associated
+with fictional demo accounts, not attributed to real builders. Images stay
+empty for Phase 1; real screenshots are deferred to Phase 3 by approval.
+
+Usernames retain display case, but uniqueness and login are case-insensitive.
+Emails are stored lowercase and matched case-insensitively. Registration creates
+the user/profile atomically. Sessions are regenerated on login/registration,
+stored in PostgreSQL, and invalidated on logout. The top bar shows Logout only
+when logged in. Passwords must be 8+ characters and at most bcrypt's 72-byte limit.
+
+The server performs no startup DDL; initialize the QA schema explicitly.
+Production initialization/seeding is not authorized by Phase 1.
+
 ## How I develop (solo, student-directed)
 I split the build into 5 phases (foundation/auth, games, builds CRUD, social + Top 10 + compare, polish + deploy). Each phase happens on its own Git branch, gets acceptance-tested in the Replit QA workspace, and only merges to main after I review the results and approve. My prompts for each phase live in docs/prompts.md; the full rules are in agent-development.md.
 
