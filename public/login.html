@@ -9,26 +9,15 @@
 <body>
   <main style="max-width:380px;margin:60px auto;padding:0 16px">
     <h1>Log in</h1>
-    <form class="card" id="login-form">
-      <div class="field"><label>Username or email</label><input name="username" required /></div>
-      <div class="field"><label>Password</label><input name="password" type="password" required /></div>
+    <form class="card" id="login-form" data-auth="login">
+      <div class="field"><label for="username">Username or email</label><input id="username" name="username" autocomplete="username" required /></div>
+      <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required /></div>
       <button class="btn btn-primary" type="submit">Log in</button>
       <p>No account? <a href="/register.html">Register</a></p>
-      <p class="error" id="login-error"></p>
+      <p class="error" id="login-error" role="alert"></p>
     </form>
   </main>
   <script src="/js/api.js"></script>
-  <script>
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const f = new FormData(e.target);
-      try {
-        await api('/api/auth/login', { method: 'POST', body: { username: f.get('username'), password: f.get('password') } });
-        location.href = '/';
-      } catch (err) {
-        document.getElementById('login-error').textContent = err.data?.errors?._general || 'Login failed.';
-      }
-    });
-  </script>
+  <script src="/js/auth-form.js"></script>
 </body>
 </html>

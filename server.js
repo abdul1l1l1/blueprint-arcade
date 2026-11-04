@@ -1,96 +1,79 @@
-// Blueprint Arcade — Express entry point
+// One Express server serves the plain frontend and API.
 require('dotenv').config();
-
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
+const PgSession = require('connect-pg-simple')(session);
 const { pool } = require('./db/pool');
+const { createAuthRouter, COOKIE_NAME, cookieOptions } = require('./routes/auth');
 
-const authRoutes = require('./routes/auth');
-const buildRoutes = require('./routes/builds');
-const gameRoutes = require('./routes/games');
-const socialRoutes = require('./routes/social');
-const statRoutes = require('./routes/stats');
+function createApp({ database = pool, store, env = process.env } = {}) {
+  if (!env.SESSION_SECRET) throw new Error('SESSION_SECRET is required; configure it in Replit Secrets.');
+  const app = express();
+  app.disable('x-powered-by');
+  if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
+  app.use(express.json({ limit: '32kb' }));
+  app.use(express.urlencoded({ extended: false, limit: '32kb' }));
+  app.use(session({
+    name: COOKIE_NAME,
+    store: store || new PgSession({ pool: database, tableName: 'session', createTableIfMissing: false }),
+    secret: env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { ...cookieOptions, secure: env.NODE_ENV === 'production', maxAge: 7 * 24 * 60 * 60 * 1000 },
+  }));
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+  app.get(['/api/health', '/api/healthz'], async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+      await database.query('SELECT 1');
+      res.json({ status: 'ok', app: 'Blueprint Arcade', db: 'connected', time: new Date().toISOString() });
+    } catch {
+      res.status(503).json({ status: 'error', app: 'Blueprint Arcade', db: 'unavailable' });
+    }
+  });
+  app.use('/api/auth', createAuthRouter(database));
+  // Preserve later-phase scaffolds, but do not implement them in Phase 1.
+  app.use('/api/builds', require('./routes/builds'));
+  app.use('/api/games', require('./routes/games'));
+  app.use('/api/social', require('./routes/social'));
+  app.use('/api/stats', require('./routes/stats'));
+  app.use('/api', (req, res) => res.status(404).json({ errors: { _general: 'API endpoint not found.' } }));
+  app.use(express.static(path.join(__dirname, 'public')));
+  app.get('/*splat', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-app.use(express.json({ limit: '32kb' }));
-app.use(express.urlencoded({ extended: false }));
-
-const sessionStore = new pgSession({ pool, tableName: 'session' });
-
-async function ensureSessionTable() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS "session" (
-      "sid" varchar NOT NULL COLLATE "default",
-      "sess" json NOT NULL,
-      "expire" timestamp(6) NOT NULL
-    ) WITH (OIDS=FALSE)`);
-  await pool.query('ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE')
-    .catch(() => {});
+  // Must follow body parsing AND all API routes to handle forwarded errors.
+  app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err);
+    if (!req.path.startsWith('/api/')) return next(err);
+    const status = err.type === 'entity.parse.failed' ? 400 : err.type === 'entity.too.large' ? 413 : 500;
+    const message = status === 400 ? 'Invalid JSON request.'
+      : status === 413 ? 'Request is too large.' : 'Something went wrong. Please try again.';
+    // Do not log request bodies, SQL errors, session contents, or credentials.
+    console.error('API request failed', { status, path: req.path });
+    res.status(status).json({ errors: { _general: message } });
+  });
+  return app;
 }
 
-app.use(session({
-  store: sessionStore,
-  secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  }
-}));
+async function start() {
+  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required.');
+  const app = createApp();
+  // DDL belongs to db:init, not startup (especially not production startup).
+  await pool.query('SELECT sid, sess, expire FROM "session" LIMIT 0');
+  const server = app.listen(process.env.PORT || 5000, '0.0.0.0', () => {
+    console.info('Blueprint Arcade is running (database and session storage ready).');
+  });
+  const shutdown = () => server.close(() => pool.end().finally(() => process.exit(0)));
+  process.once('SIGTERM', shutdown);
+  process.once('SIGINT', shutdown);
+  return server;
+}
 
-// JSON error handler for API routes (parameterized SQL + role checks upstream)
-app.use((err, req, res, next) => {
-  if (req.path.startsWith('/api/')) {
-    console.error(err);
-    return res.status(500).json({ errors: { _general: 'Something went wrong. Please try again' } });
-  }
-  next(err);
-});
-
-app.get('/api/health', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok', app: 'Blueprint Arcade', db: 'connected', time: new Date().toISOString() });
-  } catch (err) {
-    res.json({ status: 'ok', app: 'Blueprint Arcade', db: 'unavailable', time: new Date().toISOString() });
-  }
-});
-
-app.use('/api/auth', authRoutes);
-app.use('/api/builds', buildRoutes);
-app.use('/api/games', gameRoutes);
-app.use('/api/social', socialRoutes);
-app.use('/api/stats', statRoutes);
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Static page routes (one page per domain view, quiz-quest style)
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));            // Build Showcase (landing)
-app.get('/games.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'games.html')));   // Game Directory
-app.get('/game.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'game.html')));     // Game Detail
-app.get('/compare.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'compare.html'))); // Compare Games
-app.get('/top10.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'top10.html')));   // Top 10 Builds
-app.get('/post.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'post.html')));     // Post a Build
-app.get('/profile.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'profile.html'))); // My Profile
-
-app.get('/*splat', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-ensureSessionTable()
-  .then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log('Blueprint Arcade server running on port ' + PORT + ' (sessions ready)');
-    });
-  })
-  .catch(err => {
-    console.error('Startup failed: could not prepare session table:', err);
+if (require.main === module) {
+  start().catch(() => {
+    console.error('Startup failed. Configure DATABASE_URL and SESSION_SECRET, and run db:init in QA.');
     process.exit(1);
   });
+}
+module.exports = { createApp, start };
