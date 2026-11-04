@@ -1,0 +1,25 @@
+{
+  "name": "blueprint-arcade",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Blueprint Arcade — architecture & build-game showcase (high school AI-assisted web development project)",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "db:init": "node db/init.js",
+    "db:seed": "node db/seed.js"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "connect-pg-simple": "^10.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "express-session": "^1.18.0",
+    "pg": "^8.12.0"
+  }
+}
