@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Top 10 Builds — Blueprint Arcade</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="main">
+    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
+    <main style="padding:24px">
+      <h1>Top 10 Builds</h1>
+      <!-- Ranked by rating x likes (see /api/stats/top10) -->
+      <div id="top10" class="card">Loading…</div>
+    </main>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    fetch('/api/stats/top10').then(r => r.json()).then(({ top }) => {
+      document.getElementById('top10').innerHTML = top.length
+        ? '<ol>' + top.map(b =>
+            '<li><strong>' + b.title + '</strong> — ' + b.game_name +
+            ' by ' + b.owner + ' · rating ' + Number(b.avg_rating).toFixed(1) +
+            ' · ' + b.like_count + ' likes</li>').join('') + '</ol>'
+        : 'No builds yet.';
+    });
+  </script>
+</body>
+</html>

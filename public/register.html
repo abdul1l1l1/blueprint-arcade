@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register — Blueprint Arcade</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <main style="max-width:380px;margin:60px auto;padding:0 16px">
+    <h1>Create an account</h1>
+    <form class="card" id="register-form">
+      <div class="field"><label>Username</label><input name="username" required /></div>
+      <div class="field"><label>Display name</label><input name="displayName" /></div>
+      <div class="field"><label>Email</label><input name="email" type="email" required /></div>
+      <div class="field"><label>Password (8+ characters)</label><input name="password" type="password" required /></div>
+      <button class="btn btn-primary" type="submit">Register</button>
+      <p class="error" id="register-error"></p>
+    </form>
+  </main>
+  <script src="/js/api.js"></script>
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      try {
+        await api('/api/auth/register', { method: 'POST', body: Object.fromEntries(f) });
+        location.href = '/';
+      } catch (err) {
+        const errs = err.data?.errors || {};
+        document.getElementById('register-error').textContent =
+          errs._general || errs.username || errs.email || errs.password || 'Registration failed.';
+      }
+    });
+  </script>
+</body>
+</html>

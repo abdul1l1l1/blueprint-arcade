@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blueprint Arcade</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h4>Discover</h4>
+      <a href="/" class="active">Builds</a>
+      <a href="/top10.html">Top 10</a>
+      <h4>Games</h4>
+      <a href="/games.html">Directory</a>
+      <a href="/compare.html">Compare</a>
+      <h4>Builds</h4>
+      <a href="/post.html">Post a Build</a>
+      <h4>Community</h4>
+      <a href="/profile.html">My Profile</a>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <a class="btn" href="#" id="favorites-link">Favorites</a>
+        <button class="btn" onclick="toggleTheme()">Dark Mode</button>
+        <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      </header>
+      <main class="build-grid" id="showcase">
+        <!-- Build Showcase cards rendered by Phase 3 JS -->
+        <p class="card">Loading builds…</p>
+      </main>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    // Phase 3: fetch /api/builds and render cards (search bar, filters, sorting)
+  </script>
+</body>
+</html>

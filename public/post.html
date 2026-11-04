@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Post a Build — Blueprint Arcade</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="main">
+    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
+    <main style="padding:24px;max-width:560px">
+      <h1>Post a Build</h1>
+      <!-- Phase 3: form (title, game, description, image URLs, budget tier, build type, tags) -->
+      <form class="card" id="post-form">
+        <div class="field"><label>Title</label><input name="title" required /></div>
+        <div class="field"><label>Game</label><select name="game_id" id="game-select"></select></div>
+        <div class="field"><label>Description</label><textarea name="description" rows="4"></textarea></div>
+        <div class="field"><label>Image URLs (one per line)</label><textarea name="image_urls" rows="3"></textarea></div>
+        <div class="field"><label>Budget tier</label>
+          <select name="budget_tier"><option value="starter">Starter</option><option value="mid">Mid</option><option value="luxury">Luxury</option><option value="unlimited">Unlimited</option></select></div>
+        <div class="field"><label>Build type</label>
+          <select name="build_type"><option value="freeform">Freeform</option><option value="interior">Interior</option><option value="renovation">Renovation</option><option value="city-planning">City Planning</option><option value="sandbox">Sandbox</option></select></div>
+        <div class="field"><label>Tags (comma separated)</label><input name="tags" placeholder="Modern, Mansion" /></div>
+        <button class="btn btn-primary" type="submit">Post</button>
+        <p class="error" id="post-error"></p>
+      </form>
+    </main>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

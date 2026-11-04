@@ -1,0 +1,94 @@
+/* Blueprint Arcade design system — SIMPLE, not cartoonish. NO emojis in the UI.
+   Baby blue #89CFF0 · slate #6C9BD1 · ink navy #12233B · terracotta #E07A5F (CTAs) · paper #F7F9FB */
+
+:root {
+  --paper: #F7F9FB;
+  --card: #FFFFFF;
+  --border: #e2e9f0;
+  --ink: #12233B;
+  --muted: #5b6b7c;
+  --baby-blue: #89CFF0;
+  --slate: #6C9BD1;
+  --cta: #E07A5F;
+  --shadow: 0 1px 3px rgba(18, 35, 59, 0.06);
+  --radius: 10px;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+[data-theme="dark"] {
+  --paper: #0e1726;
+  --card: #16233a;
+  --border: #243550;
+  --ink: #eaf1f8;
+  --muted: #9db0c5;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* Layout: category sidebar + slim top bar */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--card);
+  padding: 20px 12px;
+}
+.sidebar h4 {
+  margin: 18px 8px 6px; font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
+}
+.sidebar a {
+  display: block; padding: 7px 10px; border-radius: 8px;
+  color: var(--ink); text-decoration: none; font-weight: 500;
+}
+.sidebar a:hover, .sidebar a.active { background: rgba(137, 207, 240, 0.18); }
+
+.main { flex: 1; min-width: 0; }
+.topbar {
+  display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+  padding: 12px 24px; border-bottom: 1px solid var(--border);
+  background: var(--card); position: sticky; top: 0; z-index: 10;
+}
+
+/* Flat white cards, thin borders, subtle shadows */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.build-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px; padding: 24px;
+}
+.btn {
+  display: inline-block; padding: 8px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card); color: var(--ink);
+  font-family: var(--font); font-size: 14px; font-weight: 500; cursor: pointer;
+  text-decoration: none;
+}
+.btn-primary { background: var(--cta); border-color: var(--cta); color: #fff; }
+.btn:hover { filter: brightness(0.97); }
+
+.tag {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  background: rgba(137, 207, 240, 0.2); color: var(--ink);
+  font-size: 12px; font-weight: 500;
+}
+
+input, select, textarea {
+  font-family: var(--font); font-size: 14px; color: var(--ink);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; width: 100%;
+}
+.field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.error { color: #c0392b; font-size: 13px; }

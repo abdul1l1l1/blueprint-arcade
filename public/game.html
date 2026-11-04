@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Game Detail — Blueprint Arcade</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="main">
+    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
+    <main style="padding:24px">
+      <!-- Phase 2: game info, tag vocabulary, builds in this game (?slug=...) -->
+      <h1 id="game-name">Game</h1>
+      <div id="game-tags"></div>
+      <div class="build-grid" id="game-builds"></div>
+    </main>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
