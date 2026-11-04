@@ -20,26 +20,26 @@
 - As a **visitor**, I can browse the build showcase, game directory, compare games, and read everything without an account.
 - As a **builder**, I can register, log in, post builds with images, tags, and budget tier, and edit or delete my own builds.
 - As a **builder**, I can pin up to 3 of my builds so they appear at the top of my public profile.
-- As a **fan**, I can rate games and builds (1-5 stars), like builds, comment, and save favorites.
+- As a **fan**, I can rate builds (1-5 stars), like builds, comment, and save favorites.
 - As a **fan**, I can search, filter, and sort builds and games to find exactly what I want.
 
 ## 4. Views
 
 | # | View | Contents |
 |---|---|---|
-| 1 | **Build Showcase** (landing) | Featured carousel, search + filters (game, variant, tag, sort), build grid |
-| 2 | **Game Directory** | Search, platform/variant/sandbox filters, sorting, game cards, pagination |
-| 3 | **Game Detail** | Gallery, description, variant + platform tags, per-game tag vocabulary, rating, comments, related games |
-| 4 | **Compare Games** | Pick 2 games, side-by-side specs, per-row winner highlighting, verdict |
-| 5 | **Top 10** | Builds ranked by rating x likes, daily fun fact, countdown timer |
-| 6 | **Profile** (bonus) | Avatar, bio, stats, pinned builds (max 3), all builds, favorite games |
-| 7 | **Post a Build** (bonus) | Form: title, game -> auto variant tags, description, image, budget tier, pin checkbox |
+| 1 | **Build Showcase** (landing) | Featured carousel, search + filters (game, build type, tag, budget tier, sort), build grid |
+| 2 | **Game Directory** | Search, sandbox filter, sorting, game cards with stats |
+| 3 | **Game Detail** | Description, variant, per-game tag vocabulary, rating, related games, builds in this game |
+| 4 | **Compare Games** | Pick 2-3 games, side-by-side specs, per-row winner highlighting, verdict |
+| 5 | **Top 10** | Builds ranked by rating x likes |
+| 6 | **Profile** (bonus) | Avatar, bio, stats, pinned builds (max 3), all builds |
+| 7 | **Post a Build** (bonus) | Form: title, game, description, image URLs, budget tier, build type, tags, pin checkbox |
 
-**Navigation:** category sidebar (Discover: Builds, Top 10 - Games: Directory, Compare - Builds: Showcase, Post a Build - Community: My Profile) + slim top bar with page title and **top-right actions**: Favorites, Dark Mode, Post a Build. Auth pages (Login, Sign Up) exist but do not count toward the 5 required views.
+**Navigation:** category sidebar (Discover: Builds, Top 10 · Games: Directory, Compare · Builds: Showcase, Post a Build · Community: My Profile) + slim top bar with **top-right actions**: Favorites, Dark Mode, Post a Build. Auth pages (Login, Register) exist but do not count toward the 5 required views.
 
 ## 5. Custom Features (10)
 
-1. Search Bar (games + builds)
+1. Search Bar (builds and games)
 2. Category Filters
 3. Sorting Options
 4. Favorites Button
@@ -52,19 +52,19 @@
 
 ## 6. Data Model
 
-9 tables — users, games, game_tags, builds, build_tags, ratings, likes, favorites, comments — plus game_stats and build_stats aggregate views (powering Top 10 and compare numbers). Full DDL in db/schema.sql; seed content in db/seed.sql (8 games + tag vocabularies + 10 credited builds).
+9 tables — users, profiles, games, game_tags, builds, build_tags, ratings, likes, comments, favorites — plus game_stats and build_stats aggregate views (powering Top 10 and compare numbers). Full DDL in db/schema.sql; seed content in db/content.js applied with `npm run db:seed` (8 games + tag vocabularies + 5 demo users + 10 credited builds).
 
 **Tag system (3 layers):** game variant (Freeform / Interior / Renovation / City Planning / Sandbox) -> per-game style vocabulary -> tags on builds via build_tags.
 
 ## 7. Auth & Permissions
 
-Supabase Auth (email + password). Row-level security: public read for all content; only authenticated users can insert ratings/likes/favorites/comments; only a build's owner can update, delete, or pin their builds (max 3 pins enforced in app logic).
+Session auth (express-session + connect-pg-simple) with bcrypt-hashed passwords. Access control is enforced server-side in the routes: public read for all content; only logged-in users can post ratings/likes/favorites/comments; only a build's owner can update, delete, or pin their builds (max 3 pins enforced in the API).
 
 ## 8. Validation & Feedback
 
-- Client-side: required fields, image URL checks, star limits, comment length (1-2000), tag limits
+- Client-side: required fields, image URL checks, star limits, comment length, tag limits
 - Server-side: DB constraints (CHECK, UNIQUE, NOT NULL) back up every form
-- Feedback: success/error toasts, inline form errors, graceful empty states, loading skeletons
+- Feedback: success/error toasts, inline form errors, graceful empty states
 
 ## 9. Responsive Design
 
@@ -76,7 +76,7 @@ Baby blue #89CFF0 (hero), slate blue #6C9BD1, ink navy #12233B (sidebar/text/dar
 
 ## 11. Tech Stack & Deployment
 
-Next.js (App Router) - Supabase (PostgreSQL + Auth) - Tailwind CSS - Vercel. Live URL required for submission.
+Plain HTML, CSS and JavaScript frontend served by Node.js 24 LTS + Express 5, with Replit PostgreSQL accessed via pg (parameterized SQL only). The same server serves static files and API routes. Replit workspace = QA; Replit Deployment = production with a separate database. Live URL required for submission.
 
 ## 12. Success Criteria
 
