@@ -33,9 +33,9 @@ function createApp({ database = pool, store, env = process.env } = {}) {
     }
   });
   app.use('/api/auth', createAuthRouter(database));
-  // Preserve later-phase scaffolds, but do not implement them in Phase 1.
+  // Only games browsing is implemented here; later-phase scaffolds stay intact.
   app.use('/api/builds', require('./routes/builds'));
-  app.use('/api/games', require('./routes/games'));
+  app.use('/api/games', require('./routes/games').createGamesRouter(database));
   app.use('/api/social', require('./routes/social'));
   app.use('/api/stats', require('./routes/stats'));
   app.use('/api', (req, res) => res.status(404).json({ errors: { _general: 'API endpoint not found.' } }));
