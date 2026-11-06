@@ -67,6 +67,36 @@ when logged in. Passwords must be 8+ characters and at most bcrypt's 72-byte lim
 The server performs no startup DDL; initialize the QA schema explicitly.
 Production initialization/seeding is not authorized by Phase 1.
 
+## Phase 2 games browsing and QA
+
+Open `/games.html` for the public directory and `/game.html?slug=bloxburg`
+for a game detail. Search matches name, genre, or description, ignoring case;
+SQL wildcard characters are literal search text. The sandbox filter uses the
+seeded `is_sandbox` flag (not words in the genre). Sorting supports name A–Z
+(default), most builds, highest build rating, and newest release year, with
+name tie-breaking. Search/filter/sort selections survive a page reload via
+the directory query string.
+
+`GET /api/games?q=...&sandbox=true|false&sort=name|builds|rating|newest`
+returns `{ games }`. Omit optional search/filter values to browse all games.
+Search is limited to 120 characters. Invalid query values return field errors
+with HTTP 400. `GET /api/games/:slug` returns `{ game, tags, builds }`, including
+only that game's vocabulary and credited builds. Unknown slugs return 404.
+Both APIs are public and read-only.
+
+Game ratings retain the existing `game_stats` definition: the mean of each
+build's average rating, including zero for unrated builds. They are not direct
+ratings of the game. The UI labels this as a build rating and displays
+“No ratings” for zero rather than suggesting a submitted zero-star rating.
+Build types and style tags are displayed without adding build editing or
+social actions.
+
+`npm test` now runs the 19 Phase 1 regression checks and 13 Phase 2 HTTP/database
+checks. Phase 2 fixtures are isolated in retained `qa_p2_*` schemas, just as
+Phase 1 uses `qa_p1_*`; neither suite deletes or overwrites public QA content.
+The phase report records the separate browser and managed-workflow restart
+checks. No production setup, schema change, or deployment is part of Phase 2.
+
 ## How I develop (solo, student-directed)
 I split the build into 5 phases (foundation/auth, games, builds CRUD, social + Top 10 + compare, polish + deploy). Each phase happens on its own Git branch, gets acceptance-tested in the Replit QA workspace, and only merges to main after I review the results and approve. My prompts for each phase live in docs/prompts.md; the full rules are in agent-development.md.
 

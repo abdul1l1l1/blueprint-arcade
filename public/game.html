@@ -4,19 +4,74 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Game Detail — Blueprint Arcade</title>
+  <meta name="description" content="Explore a building game's details, community vocabulary, and credited builds in Blueprint Arcade." />
   <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/games.css" />
 </head>
 <body>
+  <div class="layout games-layout">
+    <aside class="sidebar" aria-label="Categories">
+      <h4>Discover</h4>
+      <a href="/">Builds</a>
+      <a href="/top10.html">Top 10</a>
+      <h4>Games</h4>
+      <a href="/games.html" class="active">Directory</a>
+      <a href="/compare.html">Compare</a>
+      <h4>Builds</h4>
+      <a href="/post.html">Post a Build</a>
+      <h4>Community</h4>
+      <a href="/profile.html">My Profile</a>
+    </aside>
   <div class="main">
-    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
-    <main style="padding:24px">
-      <!-- Phase 2: game info, tag vocabulary, builds in this game (?slug=...) -->
-      <h1 id="game-name">Game</h1>
-      <div id="game-tags"></div>
-      <div class="build-grid" id="game-builds"></div>
+    <header class="topbar">
+      <a class="btn" href="/games.html">Back to Games</a>
+      <button class="btn" onclick="toggleTheme()">Dark Mode</button>
+    </header>
+    <main class="games-page detail-page">
+      <section id="game-state" class="games-state" aria-live="polite"></section>
+      <div id="game-detail" hidden>
+        <header class="detail-hero card">
+          <div class="game-mark game-mark-large" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="detail-copy">
+            <p class="eyebrow" id="game-kicker">Game profile</p>
+            <h1 id="game-name">Game</h1>
+            <p class="detail-meta" id="game-meta"></p>
+            <p class="detail-description" id="game-description"></p>
+          </div>
+          <div class="detail-stat">
+            <span class="stat-label">Build rating</span>
+            <strong id="game-rating"></strong>
+            <span id="game-build-count"></span>
+          </div>
+        </header>
+
+        <section class="vocabulary-section" aria-labelledby="vocabulary-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">The community's language</p>
+              <h2 id="vocabulary-heading">Style vocabulary</h2>
+            </div>
+          </div>
+          <div class="vocabulary-list" id="game-tags"></div>
+        </section>
+
+        <section class="builds-section" aria-labelledby="builds-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Made by players</p>
+              <h2 id="builds-heading">Credited builds</h2>
+            </div>
+            <p id="detail-build-count" class="section-count"></p>
+          </div>
+          <div id="game-builds-state" class="games-state" aria-live="polite"></div>
+          <div class="build-list" id="game-builds"></div>
+        </section>
+      </div>
     </main>
+  </div>
   </div>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/games.js"></script>
 </body>
 </html>
