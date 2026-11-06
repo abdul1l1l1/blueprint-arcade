@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Blueprint Arcade</title>
+  <title>Build Showcase — Blueprint Arcade</title>
+  <meta name="description" content="Discover architecture-game builds from the Blueprint Arcade community." />
   <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
 </head>
 <body>
   <div class="layout">
@@ -26,16 +28,60 @@
         <button class="btn" onclick="toggleTheme()">Dark Mode</button>
         <a class="btn btn-primary" href="/post.html">Post a Build</a>
       </header>
-      <main class="build-grid" id="showcase">
-        <!-- Build Showcase cards rendered by Phase 3 JS -->
-        <p class="card">Build Showcase is scheduled for Phase 3. You can register, log in, and log out now.</p>
+      <main class="builds-page">
+        <section class="builds-intro" aria-labelledby="showcase-title">
+          <div class="builds-intro-copy">
+            <p class="builds-eyebrow">Blueprint Arcade · Community builds</p>
+            <h1 id="showcase-title">Made to be explored.</h1>
+            <p class="builds-lede">A field guide to the spaces, streets, and small details builders are making across architecture games.</p>
+          </div>
+          <aside class="builds-hero-note">Find a reference, follow its maker, or add your own work to the collection.</aside>
+        </section>
+        <form class="card builds-filters" id="build-filters" role="search">
+          <div class="field search-field">
+            <label for="filter-q">Search builds</label>
+            <input id="filter-q" name="q" type="search" maxlength="120" placeholder="Search title or description" />
+          </div>
+          <div class="field">
+            <label for="filter-game">Game</label>
+            <select id="filter-game" name="game"><option value="">All games</option></select>
+          </div>
+          <div class="field">
+            <label for="filter-type">Build type</label>
+            <select id="filter-type" name="build_type">
+              <option value="">All types</option><option value="freeform">Freeform</option><option value="interior">Interior</option><option value="renovation">Renovation</option><option value="city-planning">City planning</option><option value="sandbox">Sandbox</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-budget">Budget</label>
+            <select id="filter-budget" name="budget_tier">
+              <option value="">All budgets</option><option value="starter">Starter</option><option value="mid">Mid</option><option value="luxury">Luxury</option><option value="unlimited">Unlimited</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="filter-tag">Style tag</label>
+            <select id="filter-tag" name="tag"><option value="">All tags</option></select>
+          </div>
+          <div class="field">
+            <label for="filter-sort">Sort by</label>
+            <select id="filter-sort" name="sort"><option value="newest">Newest</option><option value="rating">Rating</option><option value="likes">Likes</option></select>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-primary" type="submit">Apply filters</button>
+            <button class="btn" type="reset" id="reset-filters">Clear filters</button>
+          </div>
+        </form>
+        <section aria-labelledby="results-title">
+          <div class="build-results-heading"><h2 id="results-title">Builds</h2><p id="results-count" aria-live="polite"></p></div>
+          <div id="showcase-state" class="build-state" aria-live="polite"></div>
+          <div class="build-cards" id="showcase"></div>
+        </section>
       </main>
     </div>
   </div>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
-  <script>
-    // Phase 3: fetch /api/builds and render cards (search bar, filters, sorting)
-  </script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/showcase.js"></script>
 </body>
 </html>

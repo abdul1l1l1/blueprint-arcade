@@ -4,30 +4,81 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Post a Build — Blueprint Arcade</title>
+  <meta name="description" content="Share a build with the Blueprint Arcade community." />
   <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
 </head>
 <body>
-  <div class="main">
-    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
-    <main style="padding:24px;max-width:560px">
-      <h1>Post a Build</h1>
-      <!-- Phase 3: form (title, game, description, image URLs, budget tier, build type, tags) -->
-      <form class="card" id="post-form">
-        <div class="field"><label>Title</label><input name="title" required /></div>
-        <div class="field"><label>Game</label><select name="game_id" id="game-select"></select></div>
-        <div class="field"><label>Description</label><textarea name="description" rows="4"></textarea></div>
-        <div class="field"><label>Image URLs (one per line)</label><textarea name="image_urls" rows="3"></textarea></div>
-        <div class="field"><label>Budget tier</label>
-          <select name="budget_tier"><option value="starter">Starter</option><option value="mid">Mid</option><option value="luxury">Luxury</option><option value="unlimited">Unlimited</option></select></div>
-        <div class="field"><label>Build type</label>
-          <select name="build_type"><option value="freeform">Freeform</option><option value="interior">Interior</option><option value="renovation">Renovation</option><option value="city-planning">City Planning</option><option value="sandbox">Sandbox</option></select></div>
-        <div class="field"><label>Tags (comma separated)</label><input name="tags" placeholder="Modern, Mansion" /></div>
-        <button class="btn btn-primary" type="submit">Post</button>
-        <p class="error" id="post-error"></p>
-      </form>
-    </main>
+  <div class="layout builds-layout">
+    <aside class="sidebar">
+      <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
+      <h4>Builds</h4><a href="/post.html" class="active">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html">My Profile</a>
+    </aside>
+    <div class="main">
+      <header class="topbar"><a class="btn" href="/">Showcase</a><button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
+      <main class="builds-page form-page">
+        <div class="builds-intro">
+          <div class="builds-intro-copy">
+            <p class="builds-eyebrow">Your work, in good company</p>
+            <h1 id="form-title">Post a build</h1>
+            <p class="builds-lede">Give the community enough detail to understand what you made and how you made it.</p>
+          </div>
+        </div>
+        <div id="form-state" class="build-state" aria-live="polite"></div>
+        <form class="card build-form-card build-form" id="post-form" novalidate>
+          <div class="form-field full-width">
+            <label for="build-title">Title <span aria-hidden="true">*</span></label>
+            <input id="build-title" name="title" required autocomplete="off" />
+            <p class="field-hint">A clear, specific name works best.</p>
+          </div>
+          <div class="form-field">
+            <label for="game-select">Game <span aria-hidden="true">*</span></label>
+            <select name="game_id" id="game-select" required><option value="">Loading games…</option></select>
+          </div>
+          <div class="form-field">
+            <label for="budget-tier">Budget tier</label>
+            <select name="budget_tier" id="budget-tier"><option value="starter">Starter</option><option value="mid">Mid</option><option value="luxury">Luxury</option><option value="unlimited">Unlimited</option></select>
+          </div>
+          <div class="form-field">
+            <label for="build-type">Build type</label>
+            <select name="build_type" id="build-type"><option value="freeform">Freeform</option><option value="interior">Interior</option><option value="renovation">Renovation</option><option value="city-planning">City planning</option><option value="sandbox">Sandbox</option></select>
+          </div>
+          <div class="form-field full-width">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="5"></textarea>
+            <p class="field-hint">Optional. Share the idea, constraints, or a detail worth noticing.</p>
+          </div>
+          <div class="form-field full-width">
+            <label for="image-urls">Image URLs</label>
+            <textarea id="image-urls" name="image_urls" rows="3" placeholder="https://example.com/your-build.jpg"></textarea>
+            <p class="field-hint">Optional; one full HTTP(S) URL per line. The first image is used as the cover.</p>
+          </div>
+          <fieldset class="form-field full-width" style="border:0;padding:0;margin:0">
+            <legend class="form-field"><label>Style tags</label></legend>
+            <div id="tag-picker" class="tag-picker" aria-live="polite"><span class="field-hint">Choose a game to see its available tags.</span></div>
+            <p class="field-hint">Tags are specific to the selected game.</p>
+          </fieldset>
+          <div class="form-field full-width">
+            <div class="pin-choice">
+              <input id="pin-build" name="is_pinned" type="checkbox" />
+              <div><label for="pin-build">Pin this build on my profile</label><small>You can feature up to three builds. The server enforces this limit.</small></div>
+            </div>
+          </div>
+          <p id="post-error" class="error form-error" role="alert" hidden></p>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="submit-build" type="submit" disabled>Post build</button>
+            <a class="btn" href="/">Cancel</a>
+            <span id="form-status" class="form-status" role="status"></span>
+          </div>
+        </form>
+      </main>
+    </div>
   </div>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/post.js"></script>
 </body>
 </html>

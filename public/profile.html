@@ -3,19 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Profile — Blueprint Arcade</title>
+  <title>Builder Profile — Blueprint Arcade</title>
+  <meta name="description" content="Explore a Blueprint Arcade builder's profile and community builds." />
   <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
 </head>
 <body>
-  <div class="main">
-    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
-    <main style="padding:24px">
-      <h1>My Profile</h1>
-      <!-- Phase 3/4: pinned builds (max 3), all my builds, owner-only edit/delete/pin controls -->
-      <div class="build-grid" id="my-builds"></div>
-    </main>
+  <div class="layout builds-layout">
+    <aside class="sidebar">
+      <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
+      <h4>Builds</h4><a href="/post.html">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html" class="active">My Profile</a>
+    </aside>
+    <div class="main">
+      <header class="topbar"><a class="btn" href="/">Showcase</a><button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
+      <main class="builds-page">
+        <div id="profile-state" class="build-state" aria-live="polite"></div>
+        <section id="profile-content" hidden>
+          <div class="card profile-hero">
+            <div id="profile-avatar" class="profile-avatar" aria-hidden="true"></div>
+            <div class="profile-heading">
+              <p class="builds-eyebrow">Builder profile</p>
+              <h1 id="profile-name"></h1>
+              <p id="profile-handle" class="profile-handle"></p>
+              <p id="profile-bio" class="profile-bio"></p>
+            </div>
+            <div class="profile-stats" aria-label="Profile statistics">
+              <div class="profile-stat"><strong id="profile-build-count">0</strong><span>Builds</span></div>
+              <div class="profile-stat"><strong id="profile-pinned-count">0</strong><span>Pinned</span></div>
+            </div>
+          </div>
+          <div id="saved-notice" class="saved-notice" hidden></div>
+          <section aria-labelledby="profile-build-title">
+            <div class="build-section-heading"><h2 id="profile-build-title">Builds</h2><p id="profile-build-label"></p></div>
+            <div id="profile-builds-state" class="build-state" aria-live="polite"></div>
+            <div class="build-cards" id="my-builds"></div>
+          </section>
+        </section>
+      </main>
+    </div>
   </div>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/profile.js"></script>
 </body>
 </html>
