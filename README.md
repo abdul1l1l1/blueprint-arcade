@@ -97,6 +97,52 @@ Phase 1 uses `qa_p1_*`; neither suite deletes or overwrites public QA content.
 The phase report records the separate browser and managed-workflow restart
 checks. No production setup, schema change, or deployment is part of Phase 2.
 
+## Phase 3 build CRUD and QA
+
+The landing showcase now supports literal, case-insensitive title/description
+search, game slug, build type, budget, and exact style-tag filters. Filters
+compose with AND; sorting is newest (default), rating, or likes, descending
+with stable ties. Apply/Clear controls update the URL and reload restores the
+selection. Displayed ratings/likes use the existing seed aggregates; submitting
+social actions is still Phase 4.
+
+- `/post.html` creates a build; `/post.html?id=<build-uuid>` edits an owned build.
+- `/profile.html` resolves the signed-in user; `?username=...` opens a public
+  profile, with pinned builds first and owner controls only for that owner.
+- `GET /api/builds` accepts `q`, `game`, `build_type`, `budget_tier`, `tag`,
+  and `sort=newest|rating|likes`, returning `{ builds }`.
+- `GET /api/builds/:id` returns `{ build }`.
+- `POST /api/builds` and `PUT /api/builds/:id` accept title, numeric `game_id`,
+  description, `image_urls` array, budget tier, build type, `tags` array, and
+  boolean `is_pinned`. Create returns 201; edit returns 200 with `{ build }`.
+- `DELETE /api/builds/:id` returns `{ deleted: true }`; the UI asks for
+  confirmation first. Only the owner can edit, delete, or pin.
+- `POST /api/builds/:id/pin` accepts the explicit desired boolean
+  `{ is_pinned }`, rather than a non-idempotent toggle.
+- `GET /api/stats/profile/:username` returns `{ profile, builds }` without
+  private account fields; usernames resolve case-insensitively.
+
+The owner identity always comes from the existing authenticated session, never
+from the request body. Anonymous writes return 401, non-owner writes 403,
+missing builds 404, invalid inputs 400, and a fourth pin 409. Every mutation
+locks the owner's database row in a transaction before counting pins or
+changing a build. Create, edit, and pin therefore share the same concurrency
+protection; rejected writes roll back fields and tags together.
+
+Titles and valid game/budget/type choices are required. Description, images,
+and style tags retain the schema's optional/empty states, including the
+existing demo builds without images. Supplied image URLs must be HTTP(S)
+without embedded credentials; tags must be unique entries in the selected
+game's vocabulary. Game changes require choosing compatible tags. The form
+preserves entries on errors. Cards show the first image or an honest missing/
+failed-image state; no carousel is implemented yet.
+
+`npm test` includes the unchanged 32 Phase 1/2 checks, 15 Phase 3 PostgreSQL/HTTP
+checks in isolated retained `qa_p3_*` schemas, and three actual shared
+frontend-handler checks. Real-browser form/profile/ownership coverage is
+recorded separately in `docs/phase-3-qa-report.md`. No original demo rows,
+schema, auth implementation, secrets, or production configuration are changed.
+
 ## How I develop (solo, student-directed)
 I split the build into 5 phases (foundation/auth, games, builds CRUD, social + Top 10 + compare, polish + deploy). Each phase happens on its own Git branch, gets acceptance-tested in the Replit QA workspace, and only merges to main after I review the results and approve. My prompts for each phase live in docs/prompts.md; the full rules are in agent-development.md.
 

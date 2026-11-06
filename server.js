@@ -33,11 +33,11 @@ function createApp({ database = pool, store, env = process.env } = {}) {
     }
   });
   app.use('/api/auth', createAuthRouter(database));
-  // Only games browsing is implemented here; later-phase scaffolds stay intact.
-  app.use('/api/builds', require('./routes/builds'));
+  // Completed phases share the configured QA/runtime database dependency.
+  app.use('/api/builds', require('./routes/builds').createBuildsRouter(database));
   app.use('/api/games', require('./routes/games').createGamesRouter(database));
   app.use('/api/social', require('./routes/social'));
-  app.use('/api/stats', require('./routes/stats'));
+  app.use('/api/stats', require('./routes/stats').createStatsRouter(database));
   app.use('/api', (req, res) => res.status(404).json({ errors: { _general: 'API endpoint not found.' } }));
   app.use(express.static(path.join(__dirname, 'public')));
   app.get('/*splat', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
