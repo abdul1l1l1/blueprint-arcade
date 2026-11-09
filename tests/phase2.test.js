@@ -201,7 +201,7 @@ test('P2.9 unknown/malformed slugs fail clearly and return no cross-game data', 
   }
 });
 
-test('P2.10 server failures are safe JSON errors, and Phase 4 comparison remains unimplemented', async () => {
+test('P2.10 server failures are safe JSON errors, and comparison is publicly available', async () => {
   const failing = { query: async () => { throw new Error('Private database fixture detail'); } };
   const instance = await serve(failing);
   try {
@@ -212,7 +212,7 @@ test('P2.10 server failures are safe JSON errors, and Phase 4 comparison remains
       assert.doesNotMatch(result.text, /Private|password|SELECT|stack/);
     }
   } finally { await close(instance.server); }
-  assert.equal((await get('/api/games/compare/ids?ids=1,2')).status, 501);
+  assert.equal((await get('/api/games/compare/ids?ids=1,2')).status, 200);
 });
 
 test('P2.11 game descriptions, vocabulary, builds, and stats persist across app restart', async () => {

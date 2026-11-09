@@ -157,6 +157,8 @@
 
   function createBuildCard(build) {
     const card = node('article', 'build-card card');
+    card.dataset.buildId = String(build.id);
+    card.__baBuild = build;
     const header = node('div', 'build-card-header');
     const identity = node('div');
     identity.append(node('h3', '', build.title || 'Untitled build'));

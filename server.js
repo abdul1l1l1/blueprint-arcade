@@ -36,7 +36,7 @@ function createApp({ database = pool, store, env = process.env } = {}) {
   // Completed phases share the configured QA/runtime database dependency.
   app.use('/api/builds', require('./routes/builds').createBuildsRouter(database));
   app.use('/api/games', require('./routes/games').createGamesRouter(database));
-  app.use('/api/social', require('./routes/social'));
+  app.use('/api/social', require('./routes/social').createSocialRouter(database));
   app.use('/api/stats', require('./routes/stats').createStatsRouter(database));
   app.use('/api', (req, res) => res.status(404).json({ errors: { _general: 'API endpoint not found.' } }));
   app.use(express.static(path.join(__dirname, 'public')));

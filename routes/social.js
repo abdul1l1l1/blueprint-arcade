@@ -1,68 +1,113 @@
-// Social API — likes, comments, star ratings, favorites.
-// All routes require login; one like/rating/favorite per user per build (DB uniqueness).
+// Public reading, session-owned reactions, and serialized toggle transactions.
 const express = require('express');
 const { pool } = require('../db/pool');
+const { buildSelect, validId } = require('./build-data');
 
-const router = express.Router();
+function createSocialRouter(database = pool) {
+  const router = express.Router();
+  router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+  const login = (req, res, next) => req.session.userId ? next()
+    : res.status(401).json({ errors: { _general: 'You must be logged in.' } });
+  router.use((req, res, next) => req.method === 'POST' ? login(req, res, next) : next());
+  router.param('id', async (req, res, next, id) => {
+    if (!validId(id)) return res.status(400).json({ errors: { id: 'Invalid build ID.' } });
+    try {
+      const result = await database.query('SELECT id FROM builds WHERE id=$1', [id]);
+      if (!result.rows.length) return res.status(404).json({ errors: { _general: 'Build not found.' } });
+      next();
+    } catch (error) { next(error); }
+  });
 
-function requireLogin(req, res, next) {
-  if (!req.session.userId) {
-    return res.status(401).json({ errors: { _general: 'You must be logged in.' } });
+  async function state(client, id, userId) {
+    const { rows } = await client.query(
+      `SELECT bs.avg_rating::float8, bs.like_count::int, bs.rating_count::int, bs.comment_count::int,
+       EXISTS(SELECT 1 FROM likes WHERE build_id=$1 AND user_id=$2) AS liked,
+       EXISTS(SELECT 1 FROM favorites WHERE build_id=$1 AND user_id=$2) AS favorited,
+       (SELECT stars FROM ratings WHERE build_id=$1 AND user_id=$2) AS rating
+       FROM build_stats bs WHERE bs.build_id=$1`, [id, userId || null]);
+    return rows[0];
   }
-  next();
+  router.get('/builds/:id/state', async (req, res, next) => {
+    try { res.json(await state(database, req.params.id, req.session.userId)); }
+    catch (error) { next(error); }
+  });
+
+  for (const [action, table] of [['like', 'likes'], ['favorite', 'favorites']]) {
+    router.post(`/builds/:id/${action}`, login, async (req, res, next) => {
+      let client;
+      try {
+        client = await database.connect();
+        await client.query('BEGIN');
+        // Parent lock also prevents a concurrent delete and serializes toggles.
+        const build = await client.query('SELECT id FROM builds WHERE id=$1 FOR UPDATE', [req.params.id]);
+        if (!build.rows.length) {
+          await client.query('ROLLBACK');
+          return res.status(404).json({ errors: { _general: 'Build not found.' } });
+        }
+        const removed = await client.query(
+          `DELETE FROM ${table} WHERE build_id=$1 AND user_id=$2 RETURNING user_id`,
+          [req.params.id, req.session.userId]);
+        if (!removed.rowCount) await client.query(
+          `INSERT INTO ${table}(build_id,user_id) VALUES($1,$2)`, [req.params.id, req.session.userId]);
+        const result = await state(client, req.params.id, req.session.userId);
+        await client.query('COMMIT');
+        res.json(result);
+      } catch (error) {
+        if (client) await client.query('ROLLBACK').catch(() => {});
+        next(error);
+      } finally { client?.release(); }
+    });
+  }
+
+  router.post('/builds/:id/rating', login, async (req, res, next) => {
+    const stars = req.body?.stars;
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+      return res.status(400).json({ errors: { stars: 'Choose an integer from 1 to 5.' } });
+    }
+    try {
+      await database.query(
+        `INSERT INTO ratings(build_id,user_id,stars) VALUES($1,$2,$3)
+         ON CONFLICT(user_id,build_id) DO UPDATE SET stars=EXCLUDED.stars`,
+        [req.params.id, req.session.userId, stars]);
+      res.json(await state(database, req.params.id, req.session.userId));
+    } catch (error) {
+      if (error.code === '23503') return res.status(404).json({ errors: { _general: 'Build not found.' } });
+      next(error);
+    }
+  });
+  router.get('/builds/:id/comments', async (req, res, next) => {
+    try {
+      const { rows } = await database.query(
+        `SELECT c.id,c.body,c.created_at,u.username FROM comments c JOIN users u ON u.id=c.user_id
+         WHERE c.build_id=$1 ORDER BY c.created_at DESC,c.id DESC`, [req.params.id]);
+      res.json({ comments: rows });
+    } catch (error) { next(error); }
+  });
+  router.post('/builds/:id/comments', login, async (req, res, next) => {
+    const body = req.body?.body;
+    if (typeof body !== 'string' || !body.trim() || body.trim().length > 2000 || body.includes('\0')) {
+      return res.status(400).json({ errors: { body: 'Enter a comment of 1–2000 characters.' } });
+    }
+    try {
+      const { rows } = await database.query(
+        `WITH added AS (
+          INSERT INTO comments(build_id,user_id,body) VALUES($1,$2,$3) RETURNING id,body,created_at,user_id
+         ) SELECT a.id,a.body,a.created_at,u.username FROM added a JOIN users u ON u.id=a.user_id`,
+        [req.params.id, req.session.userId, body.trim()]);
+      res.status(201).json({ comment: rows[0] });
+    } catch (error) {
+      if (error.code === '23503') return res.status(404).json({ errors: { _general: 'Build not found.' } });
+      next(error);
+    }
+  });
+  router.get('/favorites', login, async (req, res, next) => {
+    try {
+      const { rows } = await database.query(
+        `${buildSelect} JOIN favorites f ON f.build_id=b.id
+         WHERE f.user_id=$1 ORDER BY f.created_at DESC,b.id`, [req.session.userId]);
+      res.json({ favorites: rows });
+    } catch (error) { next(error); }
+  });
+  return router;
 }
-
-// POST /api/social/builds/:id/like — toggle like
-router.post('/builds/:id/like', requireLogin, async (req, res, next) => {
-  try {
-    // TODO (Phase 4): INSERT ... ON CONFLICT toggle, return new count + liked state
-    res.status(501).json({ errors: { _general: 'Not implemented yet (Phase 4).' } });
-  } catch (err) { next(err); }
-});
-
-// POST /api/social/builds/:id/rating — set 1-5 star rating (upsert)
-router.post('/builds/:id/rating', requireLogin, async (req, res, next) => {
-  try {
-    // TODO (Phase 4): validate stars 1-5, upsert ratings, return new average
-    res.status(501).json({ errors: { _general: 'Not implemented yet (Phase 4).' } });
-  } catch (err) { next(err); }
-});
-
-// GET /api/social/builds/:id/comments — list comments
-router.get('/builds/:id/comments', async (req, res, next) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT c.id, c.body, c.created_at, u.username FROM comments c JOIN users u ON u.id = c.user_id
-       WHERE c.build_id = $1 ORDER BY c.created_at DESC`, [req.params.id]);
-    res.json({ comments: rows });
-  } catch (err) { next(err); }
-});
-
-// POST /api/social/builds/:id/comments — add comment
-router.post('/builds/:id/comments', requireLogin, async (req, res, next) => {
-  try {
-    // TODO (Phase 4): validate body, insert, return created comment
-    res.status(501).json({ errors: { _general: 'Not implemented yet (Phase 4).' } });
-  } catch (err) { next(err); }
-});
-
-// POST /api/social/builds/:id/favorite — toggle favorite
-router.post('/builds/:id/favorite', requireLogin, async (req, res, next) => {
-  try {
-    // TODO (Phase 4): toggle favorites, return state
-    res.status(501).json({ errors: { _general: 'Not implemented yet (Phase 4).' } });
-  } catch (err) { next(err); }
-});
-
-// GET /api/social/favorites — current user's favorites (Favorites view)
-router.get('/favorites', requireLogin, async (req, res, next) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT b.id, b.title, g.name AS game_name FROM favorites f
-       JOIN builds b ON b.id = f.build_id JOIN games g ON g.id = b.game_id
-       WHERE f.user_id = $1 ORDER BY f.created_at DESC`, [req.session.userId]);
-    res.json({ favorites: rows });
-  } catch (err) { next(err); }
-});
-
-module.exports = router;
+module.exports = { createSocialRouter };

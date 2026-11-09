@@ -1,4 +1,4 @@
-// Public, read-only Phase 2 browsing. Comparison remains a Phase 4 scaffold.
+// Public game browsing and comparison.
 const express = require('express');
 const { pool } = require('../db/pool');
 
@@ -85,8 +85,23 @@ function createGamesRouter(database = pool) {
     } catch (err) { next(err); }
   });
 
-  router.get('/compare/ids', (req, res) => {
-    res.status(501).json({ errors: { _general: 'Not implemented yet (Phase 4).' } });
+  router.get('/compare/ids', async (req, res, next) => {
+    const raw = req.query.ids;
+    const ids = typeof raw === 'string' ? raw.split(',').map(Number) : [];
+    if (typeof raw !== 'string' || !/^[1-9]\d*(,[1-9]\d*){1,2}$/.test(raw)
+      || ids.some(id => !Number.isSafeInteger(id) || id > 2147483647)
+      || new Set(ids).size !== ids.length) {
+      return res.status(400).json({ errors: { ids: 'Choose 2 or 3 distinct games.' } });
+    }
+    try {
+      const { rows } = await database.query(
+        `SELECT ${gameColumns},
+         ARRAY(SELECT tag FROM game_tags WHERE game_id=g.id ORDER BY tag) AS tags
+         FROM games g LEFT JOIN game_stats gs ON gs.game_id=g.id
+         WHERE g.id=ANY($1::int[]) ORDER BY array_position($1::int[],g.id)`, [ids]);
+      if (rows.length !== ids.length) return res.status(404).json({ errors: { ids: 'One or more games were not found.' } });
+      res.json({ games: rows });
+    } catch (error) { next(error); }
   });
   return router;
 }

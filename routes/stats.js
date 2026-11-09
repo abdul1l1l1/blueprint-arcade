@@ -11,14 +11,10 @@ router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }
 router.get('/top10', async (req, res, next) => {
   try {
     const { rows } = await database.query(
-      `SELECT b.id, b.title, g.name AS game_name, u.username AS owner,
-              bs.avg_rating, bs.like_count,
-              ROUND(bs.avg_rating * bs.like_count, 2) AS score
-       FROM builds b JOIN games g ON g.id = b.game_id JOIN users u ON u.id = b.owner_id
-       JOIN build_stats bs ON bs.build_id = b.id
-       ORDER BY score DESC NULLS LAST, bs.avg_rating DESC
+      `${buildSelect.replace('SELECT b.id', 'SELECT (bs.avg_rating * bs.like_count)::float8 AS score, b.id')}
+       ORDER BY bs.avg_rating * bs.like_count DESC, bs.avg_rating DESC, bs.like_count DESC,b.id
        LIMIT 10`);
-    res.json({ top: rows });
+    res.json({ top: rows.map(row => ({ ...row, score: Number(row.score) })) });
   } catch (err) { next(err); }
 });
 

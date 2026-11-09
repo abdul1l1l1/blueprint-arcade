@@ -4,28 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Top 10 Builds — Blueprint Arcade</title>
+  <meta name="description" content="The community's top-rated and most-liked architecture-game builds." />
   <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
+  <link rel="stylesheet" href="/css/phase4.css" />
 </head>
 <body>
-  <div class="main">
-    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
-    <main style="padding:24px">
-      <h1>Top 10 Builds</h1>
-      <!-- Ranked by rating x likes (see /api/stats/top10) -->
-      <div id="top10" class="card">Loading…</div>
-    </main>
+  <div class="layout builds-layout">
+    <aside class="sidebar" aria-label="Categories">
+      <h4>Discover</h4><a href="/">Builds</a><a class="active" href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
+      <h4>Builds</h4><a href="/post.html">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html">My Profile</a>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <a class="btn" href="/favorites.html">Favorites</a>
+        <button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button>
+        <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      </header>
+      <main class="phase4-page">
+        <header class="phase4-intro">
+          <p class="phase4-kicker">Community leaderboard</p>
+          <h1>Top 10 builds</h1>
+          <p>Ranked by average rating multiplied by likes. Score is shown as supplied by the leaderboard.</p>
+        </header>
+        <div id="top10-state" class="phase4-state" aria-live="polite"></div>
+        <div id="top10" class="phase4-grid"></div>
+      </main>
+    </div>
   </div>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
-  <script>
-    fetch('/api/stats/top10').then(r => r.json()).then(({ top }) => {
-      document.getElementById('top10').innerHTML = top.length
-        ? '<ol>' + top.map(b =>
-            '<li><strong>' + b.title + '</strong> — ' + b.game_name +
-            ' by ' + b.owner + ' · rating ' + Number(b.avg_rating).toFixed(1) +
-            ' · ' + b.like_count + ' likes</li>').join('') + '</ol>'
-        : 'No builds yet.';
-    });
-  </script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/social.js"></script>
+  <script src="/js/top10.js"></script>
 </body>
 </html>

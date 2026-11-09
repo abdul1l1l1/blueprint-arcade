@@ -69,6 +69,7 @@
   function buildCard(build, options = {}) {
     const article = node('article', 'card build-tile');
     article.dataset.buildId = String(build.id);
+    article.__baBuild = build;
     const cover = node('div', 'build-cover');
     const imageUrl = Array.isArray(build.image_urls) ? safeImageUrl(build.image_urls[0]) : '';
     if (imageUrl) {
@@ -77,6 +78,7 @@
       image.alt = `Cover image for ${build.title || 'community build'}`;
       image.loading = 'lazy';
       image.addEventListener('error', () => {
+        if (cover.classList.contains?.('build-carousel')) return;
         image.replaceWith(node('span', 'cover-placeholder', 'Cover image unavailable'));
         cover.classList.add('is-empty');
       }, { once: true });
