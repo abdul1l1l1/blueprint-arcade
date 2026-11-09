@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Post a Build — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
   <meta name="description" content="Share a build with the Blueprint Arcade community." />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/builds.css" />
@@ -17,7 +18,7 @@
       <h4>Community</h4><a href="/profile.html">My Profile</a>
     </aside>
     <div class="main">
-      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
+      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
       <main class="builds-page form-page">
         <div class="builds-intro">
           <div class="builds-intro-copy">
@@ -53,7 +54,7 @@
           <div class="form-field full-width">
             <label for="image-urls">Image URLs</label>
             <textarea id="image-urls" name="image_urls" rows="3" placeholder="https://example.com/your-build.jpg"></textarea>
-            <p class="field-hint">Optional; one full HTTP(S) URL per line. The first image is used as the cover.</p>
+            <p class="field-hint">Optional; one full HTTP(S) URL per line, or the approved Construction Site image path. The first image is used as the cover.</p>
           </div>
           <fieldset class="form-field full-width" style="border:0;padding:0;margin:0">
             <legend class="form-field"><label>Style tags</label></legend>

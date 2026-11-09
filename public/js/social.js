@@ -10,6 +10,7 @@
     return element;
   };
   const safeImage = (value) => {
+    if (value === '/media/builds/construction-site-c40bfeba.png') return value;
     try {
       const url = new URL(value);
       return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : '';

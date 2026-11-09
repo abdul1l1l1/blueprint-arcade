@@ -4,12 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Log in — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
-  <main style="max-width:380px;margin:60px auto;padding:0 16px">
+  <header class="topbar auth-topbar">
+    <a class="auth-brand" href="/">Blueprint Arcade</a>
+    <nav class="auth-actions" aria-label="Account navigation">
+      <a class="btn" href="/favorites.html">Favorites</a>
+      <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      <a class="btn" href="/">Explore builds</a>
+      <a class="btn" href="/register.html">Register</a>
+      <button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button>
+    </nav>
+  </header>
+  <main class="auth-page">
     <h1>Log in</h1>
-    <form class="card" id="login-form" data-auth="login">
+    <form class="card auth-card" id="login-form" data-auth="login">
       <div class="field"><label for="username">Username or email</label><input id="username" name="username" autocomplete="username" required /></div>
       <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required /></div>
       <button class="btn btn-primary" type="submit">Log in</button>

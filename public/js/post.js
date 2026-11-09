@@ -129,12 +129,7 @@
   function validateImages(raw) {
     const urls = raw.split(/\r?\n/).map((url) => url.trim()).filter(Boolean);
     for (const value of urls) {
-      try {
-        const url = new URL(value);
-        if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
-      } catch {
-        return null;
-      }
+      if (!BuildsUI.safeImageUrl(value)) return null;
     }
     return urls;
   }
@@ -143,7 +138,7 @@
     const imageUrls = validateImages(form.elements.image_urls.value);
     if (!form.elements.title.value.trim()) return { error: 'Add a title before posting.', field: 'title' };
     if (!gameSelect.value) return { error: 'Choose a game for this build.', field: 'game_id' };
-    if (imageUrls === null) return { error: 'Each image must be a full HTTP(S) URL without a username or password.', field: 'image_urls' };
+    if (imageUrls === null) return { error: 'Use full HTTP(S) image URLs without credentials, or the approved Construction Site image path.', field: 'image_urls' };
     const tags = [...new Set(selectedTagValues())];
     return {
       payload: {

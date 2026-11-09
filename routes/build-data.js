@@ -1,4 +1,5 @@
 // Shared public projection for showcase, detail, and profile. No account secrets.
+const { COVER_PATH } = require('./approved-assets');
 const buildSelect = `SELECT b.id, b.owner_id, b.game_id, b.title, b.description,
   b.image_urls, b.budget_tier, b.build_type, b.is_pinned, b.created_at, b.updated_at,
   g.name AS game_name, g.slug AS game_slug, u.username AS owner, p.display_name,
@@ -24,12 +25,13 @@ async function validateBuild(client, body, current) {
   if (!types.includes(data.build_type)) errors.build_type = 'Choose a valid build type.';
   const image_urls = data.image_urls === undefined ? [] : data.image_urls;
   if (!Array.isArray(image_urls) || image_urls.some(value => {
+    if (value === COVER_PATH) return false;
     if (typeof value !== 'string') return true;
     try {
       const url = new URL(value);
       return !['http:', 'https:'].includes(url.protocol) || !!url.username || !!url.password;
     } catch { return true; }
-  })) errors.image_urls = 'Use full HTTP or HTTPS image URLs without embedded credentials.';
+  })) errors.image_urls = 'Use full HTTP(S) URLs without credentials, or the approved Construction Site image path.';
   const tags = data.tags === undefined ? [] : data.tags;
   if (!Array.isArray(tags) || tags.some(tag => typeof tag !== 'string' || !tag.trim()) || new Set(tags).size !== tags.length) {
     errors.tags = 'Choose unique tags from this game’s vocabulary.';

@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Builder Profile — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
   <meta name="description" content="Explore a Blueprint Arcade builder's profile and community builds." />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/builds.css" />
@@ -18,7 +19,7 @@
       <h4>Community</h4><a href="/profile.html" class="active">My Profile</a>
     </aside>
     <div class="main">
-      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
+      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
       <main class="builds-page">
         <div id="profile-state" class="build-state" aria-live="polite"></div>
         <section id="profile-content" hidden>

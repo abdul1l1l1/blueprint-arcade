@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Game Detail — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
   <meta name="description" content="Explore a building game's details, community vocabulary, and credited builds in Blueprint Arcade." />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/games.css" />
@@ -28,7 +29,7 @@
     <header class="topbar">
       <a class="btn" href="/games.html">Back to Games</a>
       <a class="btn" href="/favorites.html">Favorites</a>
-      <button class="btn" onclick="toggleTheme()">Dark Mode</button>
+      <button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button>
     </header>
     <main class="games-page detail-page">
       <section id="game-state" class="games-state" aria-live="polite"></section>
