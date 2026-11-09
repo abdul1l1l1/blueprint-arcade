@@ -4,18 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Compare Games — Blueprint Arcade</title>
+  <meta name="description" content="Compare building games by genre, release, sandbox format, community builds, and ratings." />
   <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/games.css" />
+  <link rel="stylesheet" href="/css/phase4.css" />
 </head>
 <body>
-  <div class="main">
-    <header class="topbar"><button class="btn" onclick="toggleTheme()">Dark Mode</button></header>
-    <main style="padding:24px">
-      <h1>Compare Games</h1>
-      <!-- Phase 4: pick 2-3 games, side-by-side table (genre, year, builds, rating, tags) -->
-      <p class="card">Comparison tool arrives in Phase 4.</p>
-    </main>
+  <div class="layout games-layout">
+    <aside class="sidebar" aria-label="Categories">
+      <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html" class="active">Compare</a>
+      <h4>Builds</h4><a href="/post.html">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html">My Profile</a>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <a class="btn" href="/favorites.html">Favorites</a>
+        <button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button>
+        <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      </header>
+      <main class="phase4-page">
+        <header class="phase4-intro">
+          <p class="phase4-kicker">A builder's field guide</p>
+          <h1>Compare games</h1>
+          <p>Line up two or three games and compare their published details and current Blueprint Arcade build activity.</p>
+        </header>
+        <form id="compare-form" class="card phase4-panel compare-picker">
+          <div class="field">
+            <label for="compare-games">Choose 2 or 3 games</label>
+            <select id="compare-games" name="games" multiple size="6" aria-describedby="compare-help"></select>
+            <small id="compare-help">Use Ctrl or Command to select multiple games. Columns follow the directory order shown above.</small>
+          </div>
+          <button class="btn btn-primary" type="submit">Compare games</button>
+        </form>
+        <div id="compare-state" class="phase4-state" aria-live="polite"></div>
+        <section id="compare-results" hidden aria-live="polite"></section>
+      </main>
+    </div>
   </div>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/compare.js"></script>
 </body>
 </html>

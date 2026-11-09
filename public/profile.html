@@ -7,6 +7,7 @@
   <meta name="description" content="Explore a Blueprint Arcade builder's profile and community builds." />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/builds.css" />
+  <link rel="stylesheet" href="/css/phase4.css" />
 </head>
 <body>
   <div class="layout builds-layout">
@@ -17,7 +18,7 @@
       <h4>Community</h4><a href="/profile.html" class="active">My Profile</a>
     </aside>
     <div class="main">
-      <header class="topbar"><a class="btn" href="/">Showcase</a><button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
+      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
       <main class="builds-page">
         <div id="profile-state" class="build-state" aria-live="polite"></div>
         <section id="profile-content" hidden>
@@ -48,5 +49,6 @@
   <script src="/js/app.js"></script>
   <script src="/js/builds-ui.js"></script>
   <script src="/js/profile.js"></script>
+  <script src="/js/social.js"></script>
 </body>
 </html>

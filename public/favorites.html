@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Favorites — Blueprint Arcade</title>
+  <meta name="description" content="Builds you've saved from the Blueprint Arcade community." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
+  <link rel="stylesheet" href="/css/phase4.css" />
+</head>
+<body>
+  <div class="layout builds-layout">
+    <aside class="sidebar" aria-label="Categories">
+      <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
+      <h4>Builds</h4><a href="/post.html">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html">My Profile</a>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <a class="btn" href="/favorites.html" aria-current="page">Favorites</a>
+        <button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button>
+        <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      </header>
+      <main class="phase4-page">
+        <header class="phase4-intro">
+          <p class="phase4-kicker">Your saved reference shelf</p>
+          <h1>Favorites</h1>
+          <p>Builds you have kept close for the next time you need a good idea.</p>
+        </header>
+        <div id="favorites-state" class="phase4-state" aria-live="polite"></div>
+        <div id="favorites-grid" class="build-cards"></div>
+      </main>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/social.js"></script>
+  <script src="/js/favorites.js"></script>
+</body>
+</html>
