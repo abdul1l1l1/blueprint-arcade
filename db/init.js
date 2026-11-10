@@ -4,6 +4,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const { pool } = require('./pool');
+const { uploadSchema } = require('./migrate-uploads');
 
 async function initialize(database = pool) {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
@@ -11,6 +12,7 @@ async function initialize(database = pool) {
   try {
     await client.query('BEGIN');
     await client.query(schema);
+    await client.query(uploadSchema);
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

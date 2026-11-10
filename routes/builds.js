@@ -80,7 +80,7 @@ function createBuildsRouter(database = pool) {
         if (typeof req.body?.is_pinned !== 'boolean') throw failure(400, { is_pinned: 'Pin must be true or false.' });
         data = { is_pinned: req.body.is_pinned };
       } else {
-        data = await validateBuild(client, req.body, current);
+        data = await validateBuild(client, req.body, current, req.session.userId);
       }
       if (data.is_pinned && !current?.is_pinned) {
         const pins = await client.query('SELECT count(*)::int AS n FROM builds WHERE owner_id=$1 AND is_pinned', [req.session.userId]);

@@ -10,6 +10,7 @@
     return element;
   };
   const safeImage = (value) => {
+    if (window.BAUploads?.uploadId(value)) return value;
     if (value === '/media/builds/construction-site-c40bfeba.png') return value;
     if (window.BAApprovedImages?.isApprovedUrl(value)) return value;
     try {

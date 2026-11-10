@@ -52,9 +52,19 @@
             <p class="field-hint">Optional. Share the idea, constraints, or a detail worth noticing.</p>
           </div>
           <div class="form-field full-width">
+            <label for="image-files">Upload screenshots</label>
+            <input id="image-files" name="image_files" type="file" accept="image/jpeg,image/png,image/webp" multiple aria-describedby="upload-hint" />
+            <p id="upload-hint" class="field-hint">Optional. JPEG, PNG or non-animated WebP; up to 8 MB and 40 megapixels each. Images are checked and location metadata is removed.</p>
+            <label><input id="image-consent" name="image_consent" type="checkbox" /> I own these images or have permission to share them publicly. They contain no private information.</label>
+            <button id="upload-images" class="btn" type="button" disabled>Upload selected images</button>
+            <button id="clear-image-files" class="btn" type="button">Clear file selection</button>
+            <p id="upload-status" role="status" aria-live="polite"></p>
+            <div id="upload-previews" class="upload-previews"></div>
+          </div>
+          <div class="form-field full-width">
             <label for="image-urls">Image URLs</label>
             <textarea id="image-urls" name="image_urls" rows="3" placeholder="https://example.com/your-build.jpg"></textarea>
-            <p class="field-hint">Optional; one full HTTP(S) URL per line, or the approved Construction Site image path. The first image is used as the cover.</p>
+            <p class="field-hint">Optional; one full HTTP(S) URL or uploaded image path per line. Uploads are added here automatically. The first line is the cover; reorder or remove lines to change images. Images become public when you save the build.</p>
           </div>
           <fieldset class="form-field full-width" style="border:0;padding:0;margin:0">
             <legend class="form-field"><label>Style tags</label></legend>
@@ -80,7 +90,9 @@
   <script src="/js/approved-images.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/upload-path.js"></script>
   <script src="/js/builds-ui.js"></script>
+  <script src="/js/post-uploads.js"></script>
   <script src="/js/post.js"></script>
 </body>
 </html>
