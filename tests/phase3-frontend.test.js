@@ -17,7 +17,7 @@ function fixture() {
     setAttribute(key, value) { this.attributes[key] = value; }
     addEventListener(key, handler) { this.handlers[key] = handler; }
   }
-  const window = { confirm: () => false };
+  const window = { confirm: () => false, BAUploads: require('../public/js/upload-path') };
   const context = {
     window, URL,
     document: { createElement: tag => new Element(tag), createTextNode: text => ({ textContent: text }) },
@@ -90,6 +90,10 @@ test('P3 UI: failed mutations show errors without refresh; unsafe covers are rej
   assert.equal(f.messages[0], 'Only three pins allowed.');
   assert.equal(f.ui.safeImageUrl('javascript:alert(1)'), '');
   assert.equal(f.ui.safeImageUrl('https://name:private@example.test/image'), '');
+  const uploaded = '/media/uploads/9919e496-1383-4fba-b8d7-d772184a0a74.webp';
+  assert.equal(f.ui.safeImageUrl(uploaded), uploaded);
+  assert.equal(f.ui.safeImageUrl('/media/uploads/../../private/file.webp'), '');
+  assert.equal(f.ui.safeImageUrl(uploaded + '?other-path=1'), '');
   const card = f.ui.buildCard({ ...f.build, is_pinned: true, image_urls: ['https://example.test/cover.png'] });
   const image = f.walk(card).find(node => node.tag === 'img');
   image.handlers.error();
