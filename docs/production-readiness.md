@@ -7,13 +7,12 @@ URL exists. No deployment was initiated and no production database was written.
 Workspace `heliumdb` is QA. The owner must separately approve both the feature
 merge and the eventual publish; merge approval is not publish approval.
 
-**Remaining publishing blocker:** the project currently registers an API
-artifact and a Design canvas, but no publishable web artifact. The project
-snapshot identifies this artifact set as non-deployable; the current inventory
-still has the same kinds. Production commands below are prepared, but do not
-resolve that registration limitation. A supported wrapper/registration for the
-existing plain app must be agreed before changing project structure. Do not
-change immutable artifact kinds or replace the agreed stack as a workaround.
+**Publishing registration resolved with owner approval:** a web artifact now
+registers the existing app at `/`. Replit confirmed the project is deployable.
+The original API artifact retains its immutable identity but has no services;
+its duplicate workflow was removed. The web registration runs the same Express
+app, not a second frontend or proxy. The bootstrap React/Vite UI and dependencies
+were removed. No application framework, authentication or database was replaced.
 
 The application remains plain HTML/CSS/JS, Node 24, Express 5, npm with a locked
 dependency graph, pg and persistent PostgreSQL sessions. The same Express
@@ -21,7 +20,7 @@ process serves the frontend, APIs and approved image.
 
 ## Prepared Replit configuration
 
-The QA harness uses `artifacts/api-server/.replit-artifact/artifact.toml`;
+The QA harness uses `artifacts/blueprint-arcade-web/.replit-artifact/artifact.toml`;
 this platform configuration is outside this imported app's independent Git
 repository. It has been updated through Replit's validated artifact editor:
 
@@ -29,7 +28,8 @@ repository. It has been updated through Replit's validated artifact editor:
   `cd blueprint-arcade && npm ci --omit=dev`
 - Production run (from workspace root):
   `cd blueprint-arcade && npm start`
-- `NODE_ENV=production`, service port 8080; server binds `PORT` on `0.0.0.0`.
+- `NODE_ENV=production`, assigned service port 23978; server binds the managed
+  `PORT` on `0.0.0.0`.
 - Startup health `/api/healthz` verifies database connectivity.
 - No dev watch server, mockup service, schema mutation, seeding or cleanup in
   the production commands.
@@ -61,9 +61,9 @@ Before the first owner-authorized publish:
    through secret settings, without copying values into code/chat. The existing
    secret must remain available; the server fails closed if missing. Do not
    run demo seed/import/cleanup commands in production.
-4. Ensure App Storage access is attached for the fixed approved object and
+4. Ensure App Storage access is attached for the fixed approved image objects and
    `DEFAULT_OBJECT_STORAGE_BUCKET_ID` is available to the deployed service.
-   The object stays private; only its approved public application route is
+   The objects stay private; only their approved public application routes are
    exposed. No signed/dev URL is stored in a build.
 5. Publish only after explicit authorization. Record the production URL from
    Replit's deployment metadata, not from a development domain.

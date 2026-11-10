@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { pool } = require('./pool');
 const content = require('./content');
 const { inspectSeed } = require('./seed');
-const schemaPattern = /^(?:qa_p1_[a-f0-9]{12}_(?:auth|incomplete|seedrollback)|qa_p[2-5]_[a-f0-9]{32})$/;
+const schemaPattern = /^(?:qa_p1_[a-f0-9]{12}_(?:auth|incomplete|seedrollback)|qa_p[2-5]_[a-f0-9]{32}|qa_demo_images_[a-f0-9]{32})$/;
 const knownAccount = name => ['p3qa_ot63ba', 'p3qa_ot63bb'].includes(name) || /^p5qa_[a-z0-9_]{3,14}$/.test(name);
 
 async function cleanQA(apply = false, database = pool) {

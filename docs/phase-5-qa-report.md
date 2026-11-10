@@ -7,7 +7,7 @@ preserved the matching local Phase 4 snapshot, fast-forwarded main, then
 created `phase-5-polish-release`. No feature was developed on app main.
 
 QA is the Replit workspace, PostgreSQL `heliumdb` / `public`, served by managed
-`artifacts/api-server: API Server`. Same plain frontend/Node 24/Express/pg/npm/
+`artifacts/blueprint-arcade-web: web`. Same plain frontend/Node 24/Express/pg/npm/
 bcrypt/PostgreSQL-session stack; no authentication replacement.
 
 ## Implemented
@@ -154,20 +154,37 @@ Published-app acceptance and live HTTPS smoke checks are **NOT RUN**, expressly
 pending publication approval. QA success does not claim production verification.
 See `production-readiness.md` for the exact handoff.
 
-### Publishing registration blocker
+### Publishing registration resolved
 
-The workspace currently registers only an `api` artifact (the existing Express
-app) and a `design` canvas. The project snapshot reports that this artifact set
-is not publishable. Current artifact inventory confirms that no publishable web
-artifact has been registered. Updating the API production commands does not
-by itself resolve that registration limitation.
+The owner approved resolving the publishing setup before requesting merge.
+A web artifact now registers the existing Express app at `/`; Replit confirmed
+the project is deployable. Both metadata edits passed the validated artifact
+editor. The old API artifact keeps its immutable identity with no services,
+and its workflow was removed. Only one application service runs.
 
-Production commands and the cleaned initial-data snapshot are prepared, but
-production readiness is **not complete** until the existing plain app is
-represented in a supported publishable web-artifact setup. No immutable artifact
-kind was changed, no React replacement introduced, and no unapproved structural
-refactor was attempted. Ask the owner before that additional setup or any merge
-with this known blocker. No production database or live URL was fabricated.
+The web service uses the app's existing npm dev/start scripts, production
+locked dependency installation, and database health probe. The temporary
+bootstrap UI and React/Vite dependencies were removed; no app rewrite occurred.
+The web-registration files live in the outer QA harness, not the independent
+source PR. Publishing was not initiated.
 
-**MERGE STATUS: NOT MERGED — awaiting owner decision on the publishing blocker
-and separate merge approval.**
+After the separately merged illustration support arrived, the combined
+automated suite passed **77 tests, 0 failed, 0 skipped**. Root health, eight-game
+directory and eleven-build list returned successful responses through the new
+service. A root-page screenshot confirmed the original app and real Construction
+Site image, not bootstrap UI. Illustration support was preserved; no illustration
+data import was run during publishing setup.
+
+The new illustration tests initially retained their generated schema. Teardown
+was aligned with the Phase 5 policy to drop only their own schema, and cleanup's
+strict allowlist now recognizes this exact generated prefix. Cleanup remains
+explicit and QA-only.
+
+Focused teardown recheck: **6 illustration tests passed**, with no new retained
+schema. Removed the one known schema left by the initial combined run. Final
+dry run: **0 synthetic accounts, 0 fixture schemas, 11 intended builds**.
+Production-mode startup was smoke-tested locally against QA only: database
+health, landing page, Games page, build API and early theme script all passed.
+This is not a production deployment or live production verification.
+
+**MERGE STATUS: NOT MERGED — awaiting separate owner approval.**
