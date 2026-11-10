@@ -1,4 +1,6 @@
 /* Blueprint Arcade: paper-and-ink community workspace. Flat surfaces, clear rules. */
+.illustration-label { margin: 0 0 10px; color: var(--ink); font-size: 12px; line-height: 1.5; font-weight: 600; }
+.illustration-label[hidden] { display: none; }
 :root {
   color-scheme: light;
   --paper: #F7F9FB;

@@ -51,6 +51,7 @@
 
   function safeImageUrl(value) {
     if (value === '/media/builds/construction-site-c40bfeba.png') return value;
+    if (window.BAApprovedImages?.isApprovedUrl(value)) return value;
     try {
       const url = new URL(value);
       return (url.protocol === 'http:' || url.protocol === 'https:') && !url.username && !url.password ? url.href : '';
@@ -76,7 +77,9 @@
     if (imageUrl) {
       const image = document.createElement('img');
       image.src = imageUrl;
-      image.alt = `Cover image for ${build.title || 'community build'}`;
+      image.alt = window.BAApprovedImages?.isApprovedUrl(imageUrl)
+        ? `${window.BAApprovedImages.label}: ${build.title || 'demo build'}`
+        : `Cover image for ${build.title || 'community build'}`;
       image.loading = 'lazy';
       image.addEventListener('error', () => {
         if (cover.classList.contains?.('build-carousel')) return;
@@ -92,6 +95,9 @@
     article.append(cover);
 
     const body = node('div', 'build-tile-body');
+    if (window.BAApprovedImages?.isApprovedUrl(imageUrl)) {
+      body.append(node('p', 'illustration-label', window.BAApprovedImages.label));
+    }
     const titleRow = node('div', 'build-title-row');
     titleRow.append(node('h3', '', build.title || 'Untitled build'));
     const stats = node('span', 'build-stats', `Rating ${Number(build.avg_rating || 0).toFixed(1)} · ${Number(build.like_count || 0)} likes`);

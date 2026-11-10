@@ -1,5 +1,6 @@
 // Shared public projection for showcase, detail, and profile. No account secrets.
 const { COVER_PATH } = require('./approved-assets');
+const { isApprovedUrl } = require('../public/js/approved-images');
 const buildSelect = `SELECT b.id, b.owner_id, b.game_id, b.title, b.description,
   b.image_urls, b.budget_tier, b.build_type, b.is_pinned, b.created_at, b.updated_at,
   g.name AS game_name, g.slug AS game_slug, u.username AS owner, p.display_name,
@@ -27,6 +28,7 @@ async function validateBuild(client, body, current) {
   if (!Array.isArray(image_urls) || image_urls.some(value => {
     if (value === COVER_PATH) return false;
     if (typeof value !== 'string') return true;
+    if (isApprovedUrl(value)) return false;
     try {
       const url = new URL(value);
       return !['http:', 'https:'].includes(url.protocol) || !!url.username || !!url.password;

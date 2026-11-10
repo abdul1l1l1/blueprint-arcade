@@ -44,6 +44,22 @@ test('P3 UI: creator profile links use the real username, not the display name; 
   assert.equal(nodes.find(node => node.tag === 'h3').textContent, '<script>inert title</script>');
 });
 
+test('approved demo covers have honest visible labels and accessible alt text without changing creator credit', () => {
+  const f = fixture();
+  vm.runInNewContext(readFileSync(require.resolve('../public/js/approved-images.js'), 'utf8'), f.context);
+  const path = f.window.BAApprovedImages.entries[0].path;
+  const card = f.ui.buildCard({ ...f.build, image_urls: [path] });
+  const nodes = f.walk(card);
+  assert.equal(nodes.find(n => n.className === 'illustration-label').textContent, 'Illustration — not an in-game screenshot');
+  assert.match(nodes.find(n => n.tag === 'img').alt, /^Illustration — not an in-game screenshot:/);
+  assert.equal(nodes.find(n => n.href?.startsWith('/profile.html')).textContent, 'Abdul');
+  assert.equal(f.ui.safeImageUrl(path), path);
+  assert.equal(f.ui.safeImageUrl(path + '?x=1'), '');
+  assert.equal(f.ui.safeImageUrl('/media/unapproved.jpg'), '');
+  const noImage = f.walk(f.ui.buildCard(f.build));
+  assert.equal(noImage.some(n => n.className === 'illustration-label'), false);
+});
+
 test('P3 UI: only owners get controls; delete cancellation sends nothing; confirmed delete and pin refresh the view', async () => {
   const f = fixture();
   for (const me of [null, { id: 'someone-else' }]) {

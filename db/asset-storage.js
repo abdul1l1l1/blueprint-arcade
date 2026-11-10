@@ -1,4 +1,4 @@
-// Replit App Storage uses the platform sidecar; no application credentials.
+// Platform sidecar authentication; never use public bucket ACLs or signed URLs in data.
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage({
   credentials: {
@@ -14,4 +14,9 @@ const storage = new Storage({
   },
   projectId: '',
 });
-module.exports = { storage };
+function assetFile(entry) {
+  const bucket = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+  if (!bucket) throw new Error('App Storage is not configured.');
+  return storage.bucket(bucket).file(entry.objectKey);
+}
+module.exports = { storage, assetFile };

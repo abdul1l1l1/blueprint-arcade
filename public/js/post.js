@@ -138,7 +138,7 @@
     const imageUrls = validateImages(form.elements.image_urls.value);
     if (!form.elements.title.value.trim()) return { error: 'Add a title before posting.', field: 'title' };
     if (!gameSelect.value) return { error: 'Choose a game for this build.', field: 'game_id' };
-    if (imageUrls === null) return { error: 'Use full HTTP(S) image URLs without credentials, or the approved Construction Site image path.', field: 'image_urls' };
+    if (imageUrls === null) return { error: 'Use full HTTP(S) image URLs without credentials, or an approved local image path.', field: 'image_urls' };
     const tags = [...new Set(selectedTagValues())];
     return {
       payload: {
