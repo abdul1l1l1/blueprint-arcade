@@ -45,7 +45,7 @@ or session-secret fallback exists. Missing configuration stops startup/seeding.
 
 Run `npm test` for the Phase 1 integration and frontend-handler checks. These
 require the QA database and must not run against production. Tests create
-separate `qa_p1_*` schemas with synthetic fixtures, retained for inspection;
+separate `qa_p1_*` schemas with synthetic fixtures, cleaned up on completion;
 they do not delete or overwrite existing public QA data. Test passwords are
 generated in memory and never printed or committed.
 
@@ -92,7 +92,7 @@ Build types and style tags are displayed without adding build editing or
 social actions.
 
 `npm test` now runs the 19 Phase 1 regression checks and 13 Phase 2 HTTP/database
-checks. Phase 2 fixtures are isolated in retained `qa_p2_*` schemas, just as
+checks. Phase 2 fixtures are isolated in disposable `qa_p2_*` schemas, just as
 Phase 1 uses `qa_p1_*`; neither suite deletes or overwrites public QA content.
 The phase report records the separate browser and managed-workflow restart
 checks. No production setup, schema change, or deployment is part of Phase 2.
@@ -138,10 +138,32 @@ preserves entries on errors. Cards show the first image or an honest missing/
 failed-image state; no carousel is implemented yet.
 
 `npm test` includes the unchanged 32 Phase 1/2 checks, 15 Phase 3 PostgreSQL/HTTP
-checks in isolated retained `qa_p3_*` schemas, and three actual shared
+checks in isolated disposable `qa_p3_*` schemas, and three actual shared
 frontend-handler checks. Real-browser form/profile/ownership coverage is
 recorded separately in `docs/phase-3-qa-report.md`. No original demo rows,
 schema, auth implementation, secrets, or production configuration are changed.
+
+## Phase 5 themes and release preparation
+
+All ten pages share an early `public/js/theme.js` boot script: selected light/
+dark mode survives navigation/reload, synchronizes across tabs and degrades
+safely when browser storage is blocked. Auth pages use the same visual controls.
+Responsive navigation, cards, forms and comparison tables support mobile,
+tablet and desktop, with keyboard focus and reduced-motion styles.
+
+The original demo seed remains eight games, five accounts and ten credited
+builds. The owner-approved Construction Site is an additive eleventh build,
+not a replacement cover or fabricated demo screenshot. Import explicitly in QA
+with `node db/add-construction-site.js`; repeated imports skip existing content.
+Its fixed public application route serves only the approved App Storage image.
+
+Run `npm test` for all phase regressions and Phase 5 checks. Fixture schemas
+are now removed by teardown; no test suite changes public seed data.
+`node db/clean-qa.js` previews the owner-requested synthetic-data cleanup;
+`--apply` is destructive, QA-only and refuses unknown accounts/content.
+See `docs/phase-5-acceptance.md`, `docs/phase-5-qa-report.md` and
+`docs/production-readiness.md` for evidence and the separate production handoff.
+Preparing configuration does not publish; explicit owner approval is required.
 
 ## How I develop (solo, student-directed)
 I split the build into 5 phases (foundation/auth, games, builds CRUD, social + Top 10 + compare, polish + deploy). Each phase happens on its own Git branch, gets acceptance-tested in the Replit QA workspace, and only merges to main after I review the results and approve. My prompts for each phase live in docs/prompts.md; the full rules are in agent-development.md.

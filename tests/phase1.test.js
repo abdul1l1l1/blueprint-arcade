@@ -24,11 +24,13 @@ let base;
 let user;
 let cookie;
 const fixturePools = [];
+const fixtureSchemas = [];
 
 async function fixture(label) {
   const name = `qa_p1_${runId}_${label}`;
   assert.match(name, /^[a-z0-9_]+$/);
   await publicPool.query(`CREATE SCHEMA "${name}"`);
+  fixtureSchemas.push(name);
   const db = new Pool({ connectionString: process.env.DATABASE_URL, options: `-c search_path=${name}` });
   fixturePools.push(db);
   await initialize(db);
@@ -76,6 +78,7 @@ before(async () => {
 after(async () => {
   if (server?.listening) await close(server);
   await Promise.all(fixturePools.map(db => db.end()));
+  for (const name of fixtureSchemas) await publicPool.query(`DROP SCHEMA "${name}" CASCADE`);
   await publicPool.end();
 });
 

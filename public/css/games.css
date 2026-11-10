@@ -439,6 +439,15 @@
   font-size: 11px;
 }
 
+/* A tablet still has the sidebar: controls must fit its narrower content area. */
+@media (max-width: 1000px) {
+  .directory-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .directory-controls .search-field { grid-column: 1 / -1; }
+  .directory-submit { width: 100%; }
+}
+
 @media (max-width: 760px) {
   .games-layout { flex-direction: column; }
   .games-layout > .sidebar {

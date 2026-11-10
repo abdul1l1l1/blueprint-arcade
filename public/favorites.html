@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Favorites — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
   <meta name="description" content="Builds you've saved from the Blueprint Arcade community." />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/builds.css" />
@@ -20,7 +21,7 @@
     <div class="main">
       <header class="topbar">
         <a class="btn" href="/favorites.html" aria-current="page">Favorites</a>
-        <button class="btn" type="button" onclick="toggleTheme()">Dark Mode</button>
+        <button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button>
         <a class="btn btn-primary" href="/post.html">Post a Build</a>
       </header>
       <main class="phase4-page">
@@ -34,6 +35,7 @@
       </main>
     </div>
   </div>
+  <script src="/js/approved-images.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/builds-ui.js"></script>

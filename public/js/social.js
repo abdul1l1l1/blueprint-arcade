@@ -10,6 +10,8 @@
     return element;
   };
   const safeImage = (value) => {
+    if (value === '/media/builds/construction-site-c40bfeba.png') return value;
+    if (window.BAApprovedImages?.isApprovedUrl(value)) return value;
     try {
       const url = new URL(value);
       return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : '';
@@ -43,6 +45,17 @@
     }
     image.src = urls[0];
     image.alt = `Build image 1 of ${urls.length}`;
+    let illustrationLabel = card.querySelector('.illustration-label');
+    if (!illustrationLabel) {
+      illustrationLabel = node('p', 'illustration-label', window.BAApprovedImages?.label || '');
+      cover.insertAdjacentElement('afterend', illustrationLabel);
+    }
+    const updateLabel = url => {
+      const illustrated = !!window.BAApprovedImages?.isApprovedUrl(url);
+      illustrationLabel.hidden = !illustrated;
+      if (illustrated) image.alt = `${window.BAApprovedImages.label}: ${build.title || 'demo build'}`;
+    };
+    updateLabel(urls[0]);
     if (urls.length < 2) return;
     cover.classList.add('build-carousel');
     cover.classList.remove('is-empty');
@@ -64,6 +77,7 @@
       unavailable.hidden = true;
       image.src = urls[index];
       image.alt = `Build image ${index + 1} of ${urls.length}`;
+      updateLabel(urls[index]);
       count.textContent = `${index + 1} / ${urls.length}`;
     };
     previous.addEventListener('click', () => { index = (index - 1 + urls.length) % urls.length; update(); });

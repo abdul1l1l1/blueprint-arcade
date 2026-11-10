@@ -56,6 +56,7 @@ before(async () => {
 after(async () => {
   if (server?.listening) await close(server);
   await database?.end();
+  await pool.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
   await pool.end();
 });
 
