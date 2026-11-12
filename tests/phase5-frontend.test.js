@@ -55,10 +55,10 @@ test('P5 blocked or invalid storage does not break theme controls; storage event
   }
 });
 
-test('P5 all ten pages load theme before styles/content, expose required top actions, and contain no emoji', () => {
+test('P5 all eleven pages load theme before styles/content, expose required top actions, and contain no emoji', () => {
   const dir = path.join(__dirname, '../public');
   const pages = readdirSync(dir).filter(name => name.endsWith('.html'));
-  assert.equal(pages.length, 10);
+  assert.equal(pages.length, 11);
   for (const page of pages) {
     const html = readFileSync(path.join(dir, page), 'utf8');
     assert.ok(html.indexOf('/js/theme.js') < html.indexOf('</head>'), page);

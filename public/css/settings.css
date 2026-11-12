@@ -1,0 +1,17 @@
+.settings-page { width: min(100%, 900px); margin: 0 auto; padding: 26px 24px 54px; }
+.settings-heading { margin-bottom: 22px; }
+.settings-heading h1 { margin: 0 0 6px; font-size: clamp(30px, 5vw, 40px); letter-spacing: -.035em; }
+.settings-heading p { margin: 0; }
+.settings-muted { color: var(--muted); }
+.settings-card { margin: 0 0 18px; padding: clamp(18px, 3vw, 26px); }
+.settings-card h2 { margin: 0 0 8px; }
+.settings-card > p { max-width: 76ch; }
+.settings-danger { border-color: #bd665b; }
+.settings-danger .btn-danger { border-color: #bd665b; color: #9b3f35; }
+[data-theme="dark"] .settings-danger .btn-danger { color: #ff9c8d; }
+.settings-danger form { max-width: 520px; margin-top: 18px; }
+.settings-danger small { display: block; margin-top: 5px; color: var(--muted); }
+.settings-danger .error { margin: 0 0 14px; }
+@media (max-width: 520px) {
+  .settings-page { padding: 20px 14px 36px; }
+}

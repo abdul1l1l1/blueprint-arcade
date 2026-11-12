@@ -6,7 +6,6 @@
   const buildsState = document.getElementById('profile-builds-state');
   const buildsGrid = document.getElementById('my-builds');
   const savedNotice = document.getElementById('saved-notice');
-  const dataTools = document.getElementById('profile-data-tools');
   const params = new URLSearchParams(location.search);
   const requestedUsername = params.get('username');
   const savedId = params.get('saved');
@@ -49,7 +48,6 @@
     document.getElementById('profile-bio').hidden = !profile.bio;
     document.getElementById('profile-build-count').textContent = String(profile.build_count ?? (data.builds || []).length);
     document.getElementById('profile-pinned-count').textContent = String(profile.pinned_count ?? (data.builds || []).filter((build) => build.is_pinned).length);
-    dataTools.hidden = !isOwner;
     const avatar = document.getElementById('profile-avatar');
     avatar.replaceChildren();
     const avatarUrl = BuildsUI.safeImageUrl(profile.avatar_url || '');

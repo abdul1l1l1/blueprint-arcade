@@ -1,6 +1,7 @@
 // Shared public projection for showcase, detail, and profile. No account secrets.
 const { COVER_PATH } = require('./approved-assets');
 const { isApprovedUrl } = require('../public/js/approved-images');
+const { uploadId } = require('../public/js/upload-path');
 const buildSelect = `SELECT b.id, b.owner_id, b.game_id, b.title, b.description,
   b.image_urls, b.budget_tier, b.build_type, b.is_pinned, b.created_at, b.updated_at,
   g.name AS game_name, g.slug AS game_slug, u.username AS owner, p.display_name,
@@ -15,7 +16,7 @@ const budgets = ['starter', 'mid', 'luxury', 'unlimited'];
 const validId = id => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 const failure = (status, errors) => Object.assign(new Error('Build request rejected'), { status, errors });
 
-async function validateBuild(client, body, current) {
+async function validateBuild(client, body, current, ownerId) {
   const errors = {};
   const data = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   const title = typeof data.title === 'string' ? data.title.trim() : '';
@@ -28,7 +29,7 @@ async function validateBuild(client, body, current) {
   if (!Array.isArray(image_urls) || image_urls.some(value => {
     if (value === COVER_PATH) return false;
     if (typeof value !== 'string') return true;
-    if (isApprovedUrl(value)) return false;
+    if (isApprovedUrl(value) || uploadId(value)) return false;
     try {
       const url = new URL(value);
       return !['http:', 'https:'].includes(url.protocol) || !!url.username || !!url.password;
@@ -44,6 +45,17 @@ async function validateBuild(client, body, current) {
   if ([title, data.description ?? '', ...(Array.isArray(tags) ? tags : []), ...(Array.isArray(image_urls) ? image_urls : [])]
     .some(value => typeof value === 'string' && value.includes('\0'))) errors._general = 'Text cannot contain null characters.';
   if (Object.keys(errors).length) throw failure(400, errors);
+  const uploads = image_urls.map(uploadId).filter(Boolean);
+  if (uploads.length) {
+    const result = await client.query(
+      `SELECT id FROM image_uploads
+       WHERE id=ANY($1::uuid[]) AND owner_id=$2 AND ready AND public_consent`,
+      [uploads, ownerId],
+    );
+    if (new Set(result.rows.map(row => row.id)).size !== new Set(uploads).size) {
+      throw failure(403, { image_urls: 'Use only your own completed, public-consented uploads.' });
+    }
+  }
   const game = await client.query('SELECT id FROM games WHERE id=$1', [data.game_id]);
   if (!game.rows.length) throw failure(400, { game_id: 'Game not found.' });
   const vocabulary = await client.query('SELECT tag FROM game_tags WHERE game_id=$1', [data.game_id]);

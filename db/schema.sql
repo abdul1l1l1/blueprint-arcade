@@ -64,6 +64,21 @@ CREATE TABLE IF NOT EXISTS builds (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Metadata for private App Storage images already attached to builds.
+CREATE TABLE IF NOT EXISTS image_uploads (
+  id UUID PRIMARY KEY,
+  owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  staging_key TEXT NOT NULL,
+  object_key TEXT NOT NULL,
+  expected_size INTEGER NOT NULL CHECK (expected_size BETWEEN 1 AND 8388608),
+  content_type TEXT NOT NULL CHECK (content_type IN ('image/jpeg','image/png','image/webp')),
+  public_consent BOOLEAN NOT NULL CHECK (public_consent),
+  ready BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_image_uploads_owner ON image_uploads(owner_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_builds_images ON builds USING gin(image_urls);
+
 -- Build tags (layer 3)
 CREATE TABLE IF NOT EXISTS build_tags (
   build_id UUID NOT NULL REFERENCES builds(id) ON DELETE CASCADE,

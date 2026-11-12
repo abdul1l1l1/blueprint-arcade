@@ -16,10 +16,10 @@
       <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
       <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
       <h4>Builds</h4><a href="/post.html">Post a Build</a>
-      <h4>Community</h4><a href="/profile.html" class="active">My Profile</a>
+      <h4>Community</h4><a href="/profile.html" class="active">My Profile</a><a href="/settings.html">Settings</a>
     </aside>
     <div class="main">
-      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
+      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><a class="btn" href="/settings.html">Settings</a><button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button><a class="btn btn-primary" href="/post.html">Post a Build</a></header>
       <main class="builds-page">
         <div id="profile-state" class="build-state" aria-live="polite"></div>
         <section id="profile-content" hidden>
@@ -37,13 +37,6 @@
             </div>
           </div>
           <div id="saved-notice" class="saved-notice" hidden></div>
-          <section id="profile-data-tools" class="card profile-data-tools" aria-labelledby="profile-data-title" hidden>
-            <h2 id="profile-data-title">My Data and Account</h2>
-            <p>Download a JSON copy of your account, profile, builds and image references, comments, ratings, likes, and favorites.</p>
-            <p><a class="btn" id="download-my-data" href="/api/auth/me/data" download>Download My Data</a></p>
-            <p><strong>Delete a build:</strong> Use Delete on one of your build cards below. Deleting a build also removes its comments, ratings, likes, and favorites.</p>
-            <p><strong>Account deletion:</strong> You can request account deletion from the site owner.</p>
-          </section>
           <section aria-labelledby="profile-build-title">
             <div class="build-section-heading"><h2 id="profile-build-title">Builds</h2><p id="profile-build-label"></p></div>
             <div id="profile-builds-state" class="build-state" aria-live="polite"></div>
@@ -54,6 +47,7 @@
     </div>
   </div>
   <script src="/js/approved-images.js"></script>
+  <script src="/js/upload-path.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/builds-ui.js"></script>
