@@ -62,6 +62,10 @@
 .profile-handle { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
 .profile-bio { max-width: 640px; margin: 12px 0 0; color: var(--ink); font-size: 14px; white-space: pre-line; overflow-wrap: anywhere; }
 .profile-stats { display: flex; gap: 18px; padding-left: 20px; border-left: 1px solid var(--border); }
+.profile-data-tools { margin: 18px 0 22px; padding: 20px; }
+.profile-data-tools h2 { margin: 0 0 8px; }
+.profile-data-tools p { max-width: 78ch; }
+.profile-data-tools a { display: inline-block; }
 .profile-stat { display: flex; flex-direction: column; }
 .profile-stat strong { font-size: 22px; letter-spacing: -.04em; }
 .profile-stat span { color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }

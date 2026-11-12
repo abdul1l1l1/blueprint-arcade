@@ -122,6 +122,93 @@ function createAuthRouter(database = pool) {
       res.json({ user: publicUser(rows[0]) });
     } catch (err) { next(err); }
   });
+
+  router.get('/me/data', async (req, res, next) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ errors: { _general: 'You must be logged in to download your data.' } });
+    }
+
+    let client;
+    let transaction = false;
+    try {
+      client = await database.connect();
+      await client.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      transaction = true;
+
+      const accountResult = await client.query(
+        `SELECT u.id AS "id", u.username AS "username", u.email AS "email", u.role AS "role",
+           u.created_at AS "createdAt",
+           p.display_name AS "displayName", p.bio AS "bio", p.avatar_url AS "avatarUrl",
+           p.favorite_game_id AS "favoriteGameId", p.created_at AS "profileCreatedAt"
+         FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.id=$1`,
+        [req.session.userId]
+      );
+      const account = accountResult.rows[0];
+      if (!account) {
+        await client.query('COMMIT');
+        transaction = false;
+        return res.status(401).json({ errors: { _general: 'You must be logged in to download your data.' } });
+      }
+
+      const builds = await client.query(
+        `SELECT b.id, b.game_id AS "gameId", b.title, b.description,
+           b.image_urls AS "imageReferences", b.budget_tier AS "budgetTier",
+           b.build_type AS "buildType", b.is_pinned AS "isPinned",
+           b.created_at AS "createdAt", b.updated_at AS "updatedAt",
+           ARRAY(SELECT bt.tag FROM build_tags bt WHERE bt.build_id=b.id ORDER BY bt.tag) AS tags
+         FROM builds b WHERE b.owner_id=$1 ORDER BY b.created_at,b.id`,
+        [req.session.userId]
+      );
+      const comments = await client.query(
+        `SELECT id, build_id AS "buildId", body, created_at AS "createdAt"
+         FROM comments WHERE user_id=$1 ORDER BY created_at,id`,
+        [req.session.userId]
+      );
+      const ratings = await client.query(
+        `SELECT id, build_id AS "buildId", stars, created_at AS "createdAt"
+         FROM ratings WHERE user_id=$1 ORDER BY created_at,id`,
+        [req.session.userId]
+      );
+      const likes = await client.query(
+        `SELECT build_id AS "buildId", created_at AS "createdAt"
+         FROM likes WHERE user_id=$1 ORDER BY created_at,build_id`,
+        [req.session.userId]
+      );
+      const favorites = await client.query(
+        `SELECT build_id AS "buildId", created_at AS "createdAt"
+         FROM favorites WHERE user_id=$1 ORDER BY created_at,build_id`,
+        [req.session.userId]
+      );
+
+      await client.query('COMMIT');
+      transaction = false;
+      const { id, username, email, role, createdAt, displayName, bio, avatarUrl, favoriteGameId, profileCreatedAt } = account;
+      const exportData = {
+        formatVersion: 1,
+        exportedAt: new Date().toISOString(),
+        account: { id, username, email, role, createdAt },
+        profile: displayName === null ? null : {
+          displayName,
+          bio,
+          avatarUrl,
+          favoriteGameId,
+          createdAt: profileCreatedAt,
+        },
+        builds: builds.rows,
+        comments: comments.rows,
+        ratings: ratings.rows,
+        likes: likes.rows,
+        favorites: favorites.rows,
+      };
+      res.set('X-Content-Type-Options', 'nosniff');
+      res.attachment('blueprint-arcade-my-data.json').send(JSON.stringify(exportData, null, 2));
+    } catch (err) {
+      if (transaction) await client.query('ROLLBACK').catch(() => {});
+      next(err);
+    } finally {
+      client?.release();
+    }
+  });
   return router;
 }
 

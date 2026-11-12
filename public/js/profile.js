@@ -6,6 +6,7 @@
   const buildsState = document.getElementById('profile-builds-state');
   const buildsGrid = document.getElementById('my-builds');
   const savedNotice = document.getElementById('saved-notice');
+  const dataTools = document.getElementById('profile-data-tools');
   const params = new URLSearchParams(location.search);
   const requestedUsername = params.get('username');
   const savedId = params.get('saved');
@@ -37,6 +38,7 @@
 
   function renderProfile(data) {
     const profile = data.profile;
+    const isOwner = authChecked && me && String(me.id) === String(profile.id);
     profileData = data;
     const displayName = profile.display_name || profile.username || 'Builder';
     document.title = `${displayName} — Blueprint Arcade`;
@@ -47,6 +49,7 @@
     document.getElementById('profile-bio').hidden = !profile.bio;
     document.getElementById('profile-build-count').textContent = String(profile.build_count ?? (data.builds || []).length);
     document.getElementById('profile-pinned-count').textContent = String(profile.pinned_count ?? (data.builds || []).filter((build) => build.is_pinned).length);
+    dataTools.hidden = !isOwner;
     const avatar = document.getElementById('profile-avatar');
     avatar.replaceChildren();
     const avatarUrl = BuildsUI.safeImageUrl(profile.avatar_url || '');
@@ -81,7 +84,7 @@
       const notice = BuildsUI.node('p', 'error', 'Account status could not be checked. Owner controls are hidden; retry the page to manage your builds.');
       notice.setAttribute('role', 'status');
       state.append(notice);
-    } else if (me && String(me.id) === String(profile.id)) {
+    } else if (isOwner) {
       const note = BuildsUI.node('p', 'field-hint', 'This is your public profile. You can edit, delete, and pin your builds below.');
       note.setAttribute('role', 'status');
       state.append(note);
