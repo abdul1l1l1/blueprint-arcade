@@ -37,6 +37,13 @@
             </div>
           </div>
           <div id="saved-notice" class="saved-notice" hidden></div>
+          <section id="profile-data-tools" class="card profile-data-tools" aria-labelledby="profile-data-title" hidden>
+            <h2 id="profile-data-title">My Data and Account</h2>
+            <p>Download a JSON copy of your account, profile, builds and image references, comments, ratings, likes, and favorites.</p>
+            <p><a class="btn" id="download-my-data" href="/api/auth/me/data" download>Download My Data</a></p>
+            <p><strong>Delete a build:</strong> Use Delete on one of your build cards below. Deleting a build also removes its comments, ratings, likes, and favorites.</p>
+            <p><strong>Account deletion:</strong> You can request account deletion from the site owner.</p>
+          </section>
           <section aria-labelledby="profile-build-title">
             <div class="build-section-heading"><h2 id="profile-build-title">Builds</h2><p id="profile-build-label"></p></div>
             <div id="profile-builds-state" class="build-state" aria-live="polite"></div>
