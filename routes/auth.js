@@ -1,6 +1,7 @@
 // Local session authentication is the explicit project requirement.
 const express = require('express');
 const bcrypt = require('bcrypt');
+const { createHash, randomBytes } = require('node:crypto');
 const { pool } = require('../db/pool');
 
 const COOKIE_NAME = 'blueprint.sid';
@@ -11,6 +12,9 @@ const publicUser = (row) => ({
 const sessionCall = (session, method) => new Promise((resolve, reject) => {
   session[method]((err) => err ? reject(err) : resolve());
 });
+const passwordError = (password) => typeof password !== 'string' || password.length < 8
+  || Buffer.byteLength(password, 'utf8') > 72
+  ? 'Password must be at least 8 characters and at most 72 bytes.' : null;
 
 async function signIn(req, userId) {
   await sessionCall(req.session, 'regenerate');
@@ -18,7 +22,7 @@ async function signIn(req, userId) {
   await sessionCall(req.session, 'save');
 }
 
-function createAuthRouter(database = pool, imageStorage = require('../db/image-storage')) {
+function createAuthRouter(database = pool, imageStorage = require('../db/image-storage'), env = process.env, logger = console) {
   const router = express.Router();
   router.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
@@ -38,10 +42,8 @@ function createAuthRouter(database = pool, imageStorage = require('../db/image-s
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = 'Enter a valid email address.';
     }
-    // bcrypt uses at most 72 bytes; reject longer input instead of silently truncating it.
-    if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
-      errors.password = 'Password must be at least 8 characters and at most 72 bytes.';
-    }
+    const invalidPassword = passwordError(password);
+    if (invalidPassword) errors.password = invalidPassword;
     if (displayName.length > 80) errors.displayName = 'Display name must be 80 characters or fewer.';
     if (Object.keys(errors).length) return res.status(400).json({ errors });
 
@@ -96,6 +98,97 @@ function createAuthRouter(database = pool, imageStorage = require('../db/image-s
       await signIn(req, user.id);
       res.json({ user: publicUser(user) });
     } catch (err) { next(err); }
+  });
+
+  router.post('/password-reset/request', async (req, res, next) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    try {
+      const { rows: [user] } = email.length <= 254
+        ? await database.query('SELECT id FROM users WHERE lower(email)=$1', [email])
+        : { rows: [] };
+      if (user && env.NODE_ENV !== 'production') {
+        const token = randomBytes(32).toString('base64url');
+        const tokenHash = createHash('sha256').update(token).digest('hex');
+        const client = await database.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(
+            `UPDATE password_reset_tokens SET used_at=now()
+             WHERE user_id=$1 AND used_at IS NULL`,
+            [user.id],
+          );
+          await client.query(
+            `INSERT INTO password_reset_tokens(user_id,token_hash,expires_at)
+             VALUES($1,$2,now()+interval '1 hour')`,
+            [user.id, tokenHash],
+          );
+          await client.query('COMMIT');
+        } catch (error) {
+          await client.query('ROLLBACK').catch(() => {});
+          throw error;
+        } finally {
+          client.release();
+        }
+        logger.info(`[QA password reset] /reset-password.html?token=${encodeURIComponent(token)}`);
+      }
+      return res.status(202).json({
+        message: 'If an account matches this email, reset instructions will be provided when available.',
+      });
+    } catch (error) { next(error); }
+  });
+
+  router.post('/password-reset/complete', async (req, res, next) => {
+    const token = typeof req.body?.token === 'string' && req.body.token.length <= 128
+      ? req.body.token : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const invalidPassword = passwordError(password);
+    if (invalidPassword) return res.status(400).json({ errors: { password: invalidPassword } });
+    if (!token) {
+      return res.status(400).json({ errors: { token: 'This reset link is invalid or expired.' } });
+    }
+
+    let client;
+    let transaction = false;
+    try {
+      const passwordHash = await bcrypt.hash(password, 10);
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      client = await database.connect();
+      await client.query('BEGIN');
+      transaction = true;
+      const { rows: [reset] } = await client.query(
+        `SELECT id,user_id FROM password_reset_tokens
+         WHERE token_hash=$1 AND used_at IS NULL AND expires_at>now()
+         FOR UPDATE`,
+        [tokenHash],
+      );
+      if (!reset) {
+        await client.query('ROLLBACK');
+        transaction = false;
+        return res.status(400).json({ errors: { token: 'This reset link is invalid or expired.' } });
+      }
+      const updated = await client.query('UPDATE users SET password_hash=$1 WHERE id=$2', [
+        passwordHash, reset.user_id,
+      ]);
+      if (!updated.rowCount) {
+        await client.query('ROLLBACK');
+        transaction = false;
+        return res.status(400).json({ errors: { token: 'This reset link is invalid or expired.' } });
+      }
+      await client.query('UPDATE password_reset_tokens SET used_at=now() WHERE id=$1', [reset.id]);
+      await client.query(
+        `UPDATE password_reset_tokens SET used_at=now()
+         WHERE user_id=$1 AND id<>$2 AND used_at IS NULL`,
+        [reset.user_id, reset.id],
+      );
+      await client.query('COMMIT');
+      transaction = false;
+      return res.json({ ok: true, message: 'Password updated. You can now log in.' });
+    } catch (error) {
+      if (transaction) await client.query('ROLLBACK').catch(() => {});
+      next(error);
+    } finally {
+      client?.release();
+    }
   });
 
   router.post('/logout', async (req, res, next) => {
@@ -179,6 +272,12 @@ function createAuthRouter(database = pool, imageStorage = require('../db/image-s
          FROM favorites WHERE user_id=$1 ORDER BY created_at,build_id`,
         [req.session.userId]
       );
+      const notifications = await client.query(
+        `SELECT id, build_id AS "buildId",
+            event_type AS "eventType", created_at AS "createdAt", read_at AS "readAt"
+         FROM notifications WHERE recipient_id=$1 ORDER BY created_at,id`,
+        [req.session.userId]
+      );
 
       await client.query('COMMIT');
       transaction = false;
@@ -199,6 +298,7 @@ function createAuthRouter(database = pool, imageStorage = require('../db/image-s
         ratings: ratings.rows,
         likes: likes.rows,
         favorites: favorites.rows,
+        notifications: notifications.rows,
       };
       res.set('X-Content-Type-Options', 'nosniff');
       res.attachment('blueprint-arcade-my-data.json').send(JSON.stringify(exportData, null, 2));

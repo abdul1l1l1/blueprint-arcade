@@ -4,6 +4,13 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const topbar = document.querySelector('.topbar');
   if (!topbar) return;
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar && !sidebar.querySelector('a[href="/about.html"]')) {
+    const about = document.createElement('a');
+    about.href = '/about.html';
+    about.textContent = 'About';
+    sidebar.append(about);
+  }
   const auth = document.createElement('div');
   auth.className = 'auth-actions';
   topbar.append(auth);
@@ -20,6 +27,37 @@ document.addEventListener('DOMContentLoaded', async () => {
       register.textContent = 'Register';
       auth.append(login, register);
       return;
+    }
+    const notificationLink = document.createElement('a');
+    notificationLink.className = 'btn notification-link';
+    notificationLink.href = '/notifications.html';
+    notificationLink.setAttribute('aria-label', 'Notifications');
+    notificationLink.title = 'Notifications';
+    const icon = document.createElement('span');
+    icon.className = 'notification-bell-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    const badge = document.createElement('span');
+    badge.className = 'notification-count';
+    badge.hidden = true;
+    notificationLink.append(icon, badge);
+    const setUnreadCount = (value) => {
+      const count = Number(value) || 0;
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.hidden = count === 0;
+      notificationLink.setAttribute('aria-label', count
+        ? `Notifications, ${count} unread` : 'Notifications');
+    };
+    let notificationListOpened = location.pathname === '/notifications.html';
+    document.addEventListener('blueprint:notifications-read', () => {
+      notificationListOpened = true;
+      setUnreadCount(0);
+    });
+    auth.append(notificationLink);
+    try {
+      const result = await api('/api/notifications/unread-count');
+      setUnreadCount(notificationListOpened ? 0 : result.unread_count);
+    } catch {
+      setUnreadCount(0);
     }
     const name = document.createElement('span');
     name.textContent = user.displayName || user.username;

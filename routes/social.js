@@ -2,6 +2,7 @@
 const express = require('express');
 const { pool } = require('../db/pool');
 const { buildSelect, validId } = require('./build-data');
+const { recordBuildNotification } = require('./notifications');
 
 function createSocialRouter(database = pool) {
   const router = express.Router();
@@ -42,16 +43,25 @@ function createSocialRouter(database = pool) {
         client = await database.connect();
         await client.query('BEGIN');
         // Parent lock also prevents a concurrent delete and serializes toggles.
-        const build = await client.query('SELECT id FROM builds WHERE id=$1 FOR UPDATE', [req.params.id]);
-        if (!build.rows.length) {
+        const { rows: [build] } = await client.query(
+          'SELECT id,owner_id FROM builds WHERE id=$1 FOR UPDATE', [req.params.id]);
+        if (!build) {
           await client.query('ROLLBACK');
           return res.status(404).json({ errors: { _general: 'Build not found.' } });
         }
         const removed = await client.query(
           `DELETE FROM ${table} WHERE build_id=$1 AND user_id=$2 RETURNING user_id`,
           [req.params.id, req.session.userId]);
-        if (!removed.rowCount) await client.query(
-          `INSERT INTO ${table}(build_id,user_id) VALUES($1,$2)`, [req.params.id, req.session.userId]);
+        if (!removed.rowCount) {
+          await client.query(
+            `INSERT INTO ${table}(build_id,user_id) VALUES($1,$2)`, [req.params.id, req.session.userId]);
+          if (action === 'like') await recordBuildNotification(client, {
+            recipientId: build.owner_id,
+            actorId: req.session.userId,
+            buildId: req.params.id,
+            eventType: 'like',
+          });
+        }
         const result = await state(client, req.params.id, req.session.userId);
         await client.query('COMMIT');
         res.json(result);
@@ -83,6 +93,12 @@ function createSocialRouter(database = pool) {
       if (!removed.rowCount) {
         await client.query('INSERT INTO reposts(user_id,build_id) VALUES($1,$2)',
           [req.session.userId, req.params.id]);
+        await recordBuildNotification(client, {
+          recipientId: build.owner_id,
+          actorId: req.session.userId,
+          buildId: req.params.id,
+          eventType: 'repost',
+        });
       }
       const result = await state(client, req.params.id, req.session.userId);
       await client.query('COMMIT');
@@ -98,16 +114,34 @@ function createSocialRouter(database = pool) {
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
       return res.status(400).json({ errors: { stars: 'Choose an integer from 1 to 5.' } });
     }
+    let client;
     try {
-      await database.query(
+      client = await database.connect();
+      await client.query('BEGIN');
+      const { rows: [build] } = await client.query(
+        'SELECT id,owner_id FROM builds WHERE id=$1 FOR UPDATE', [req.params.id]);
+      if (!build) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ errors: { _general: 'Build not found.' } });
+      }
+      await client.query(
         `INSERT INTO ratings(build_id,user_id,stars) VALUES($1,$2,$3)
          ON CONFLICT(user_id,build_id) DO UPDATE SET stars=EXCLUDED.stars`,
         [req.params.id, req.session.userId, stars]);
-      res.json(await state(database, req.params.id, req.session.userId));
+      await recordBuildNotification(client, {
+        recipientId: build.owner_id,
+        actorId: req.session.userId,
+        buildId: req.params.id,
+        eventType: 'rating',
+      });
+      const result = await state(client, req.params.id, req.session.userId);
+      await client.query('COMMIT');
+      res.json(result);
     } catch (error) {
+      if (client) await client.query('ROLLBACK').catch(() => {});
       if (error.code === '23503') return res.status(404).json({ errors: { _general: 'Build not found.' } });
       next(error);
-    }
+    } finally { client?.release(); }
   });
   router.get('/builds/:id/comments', async (req, res, next) => {
     try {
@@ -122,17 +156,37 @@ function createSocialRouter(database = pool) {
     if (typeof body !== 'string' || !body.trim() || body.trim().length > 2000 || body.includes('\0')) {
       return res.status(400).json({ errors: { body: 'Enter a comment of 1–2000 characters.' } });
     }
+    let client;
     try {
-      const { rows } = await database.query(
+      client = await database.connect();
+      await client.query('BEGIN');
+      const { rows: [build] } = await client.query(
+        'SELECT id,owner_id FROM builds WHERE id=$1 FOR UPDATE', [req.params.id]);
+      if (!build) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ errors: { _general: 'Build not found.' } });
+      }
+      const { rows: [comment] } = await client.query(
         `WITH added AS (
-          INSERT INTO comments(build_id,user_id,body) VALUES($1,$2,$3) RETURNING id,body,created_at,user_id
-         ) SELECT a.id,a.body,a.created_at,u.username FROM added a JOIN users u ON u.id=a.user_id`,
+          INSERT INTO comments(build_id,user_id,body) VALUES($1,$2,$3)
+          RETURNING id,body,created_at,user_id
+         )
+         SELECT a.id,a.body,a.created_at,u.username
+         FROM added a JOIN users u ON u.id=a.user_id`,
         [req.params.id, req.session.userId, body.trim()]);
-      res.status(201).json({ comment: rows[0] });
+      await recordBuildNotification(client, {
+        recipientId: build.owner_id,
+        actorId: req.session.userId,
+        buildId: req.params.id,
+        eventType: 'comment',
+      });
+      await client.query('COMMIT');
+      res.status(201).json({ comment });
     } catch (error) {
+      if (client) await client.query('ROLLBACK').catch(() => {});
       if (error.code === '23503') return res.status(404).json({ errors: { _general: 'Build not found.' } });
       next(error);
-    }
+    } finally { client?.release(); }
   });
   router.get('/favorites', login, async (req, res, next) => {
     try {

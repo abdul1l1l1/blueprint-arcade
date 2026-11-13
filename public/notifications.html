@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notifications — Blueprint Arcade</title>
+  <meta name="description" content="Recent activity on your builds." />
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/phase6a.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="brand" href="/">Blueprint Arcade</a>
+      <h4>Discover</h4>
+      <a href="/">Builds</a>
+      <a href="/top10.html">Top 10</a>
+      <h4>Games</h4>
+      <a href="/games.html">Directory</a>
+      <a href="/compare.html">Compare</a>
+      <h4>Builds</h4>
+      <a href="/post.html">Post a Build</a>
+      <h4>Community</h4>
+      <a href="/profile.html">My Profile</a>
+      <a href="/settings.html">Settings</a>
+      <a href="/about.html">About</a>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <a class="btn" href="/">Showcase</a>
+        <a class="btn" href="/favorites.html">Favorites</a>
+        <a class="btn" href="/settings.html">Settings</a>
+        <button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button>
+        <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      </header>
+      <main class="builds-page notifications-page">
+        <header class="notifications-intro">
+          <p class="builds-eyebrow">Community activity</p>
+          <h1>Notifications</h1>
+          <p>Recent activity on your builds.</p>
+        </header>
+        <div id="notifications-state" class="build-state" role="status" aria-live="polite">Loading notifications…</div>
+        <section id="notifications-list" class="notification-list" aria-label="Notifications" hidden></section>
+      </main>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/notifications.js"></script>
+</body>
+</html>
