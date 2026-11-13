@@ -41,7 +41,9 @@ test('P3 UI: creator profile links use the real username, not the display name; 
   const credit = nodes.find(node => node.href?.startsWith('/profile.html'));
   assert.equal(credit.textContent, 'Abdul');
   assert.equal(credit.href, '/profile.html?username=abdul_builds');
-  assert.equal(nodes.find(node => node.tag === 'h3').textContent, '<script>inert title</script>');
+  const detail = nodes.find(node => node.className === 'build-detail-link');
+  assert.equal(detail.textContent, '<script>inert title</script>');
+  assert.equal(detail.href, '/build.html?id=qa-build-id');
 });
 
 test('approved demo covers have honest visible labels and accessible alt text without changing creator credit', () => {

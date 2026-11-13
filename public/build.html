@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="View a Blueprint Arcade community build." />
+  <title>Build details — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
+  <link rel="stylesheet" href="/css/phase4.css" />
+  <link rel="stylesheet" href="/css/build-detail.css" />
+</head>
+<body>
+  <div class="layout builds-layout">
+    <aside class="sidebar">
+      <a class="brand" href="/">Blueprint Arcade</a>
+      <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
+      <h4>Builds</h4><a href="/post.html">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html">My Profile</a><a href="/settings.html">Settings</a>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <a class="btn" href="/">Showcase</a>
+        <a class="btn" href="/favorites.html">Favorites</a>
+        <a class="btn" href="/settings.html">Settings</a>
+        <button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button>
+        <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      </header>
+      <main class="builds-page build-detail-page">
+        <div id="build-detail-state" class="build-state" aria-live="polite"></div>
+        <article id="build-detail" class="card build-detail-card" data-build-detail hidden>
+          <header class="build-detail-heading">
+            <p class="builds-eyebrow">Community build</p>
+            <h1 id="detail-title"></h1>
+            <p class="build-credit">by <a id="detail-owner"></a> · <a id="detail-game" class="game-link"></a></p>
+          </header>
+          <div id="detail-cover" class="build-cover detail-cover"></div>
+          <div class="detail-action-slot" data-social-actions></div>
+          <section class="detail-comments" aria-labelledby="detail-comments-title">
+            <h2 id="detail-comments-title">Comments</h2>
+            <div data-social-comments></div>
+          </section>
+          <section class="detail-information" aria-labelledby="detail-information-title">
+            <h2 id="detail-information-title">About this build</h2>
+            <p id="detail-description" class="build-description-copy"></p>
+            <div id="detail-meta" class="build-meta"></div>
+            <div id="detail-tags" class="build-tags"></div>
+          </section>
+        </article>
+      </main>
+    </div>
+  </div>
+  <script src="/js/approved-images.js"></script>
+  <script src="/js/upload-path.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/build-detail.js"></script>
+  <script src="/js/social.js"></script>
+</body>
+</html>

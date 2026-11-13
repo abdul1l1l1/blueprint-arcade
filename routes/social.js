@@ -23,7 +23,10 @@ function createSocialRouter(database = pool) {
       `SELECT bs.avg_rating::float8, bs.like_count::int, bs.rating_count::int, bs.comment_count::int,
        EXISTS(SELECT 1 FROM likes WHERE build_id=$1 AND user_id=$2) AS liked,
        EXISTS(SELECT 1 FROM favorites WHERE build_id=$1 AND user_id=$2) AS favorited,
-       (SELECT stars FROM ratings WHERE build_id=$1 AND user_id=$2) AS rating
+       (SELECT stars FROM ratings WHERE build_id=$1 AND user_id=$2) AS rating,
+       EXISTS(SELECT 1 FROM reposts WHERE build_id=$1 AND user_id=$2) AS reposted,
+       (SELECT count(*)::int FROM reposts WHERE build_id=$1) AS repost_count,
+       COALESCE((SELECT owner_id<>$2 FROM builds WHERE id=$1),FALSE) AS can_repost
        FROM build_stats bs WHERE bs.build_id=$1`, [id, userId || null]);
     return rows[0];
   }
@@ -58,6 +61,37 @@ function createSocialRouter(database = pool) {
       } finally { client?.release(); }
     });
   }
+
+  router.post('/builds/:id/repost', login, async (req, res, next) => {
+    let client;
+    try {
+      client = await database.connect();
+      await client.query('BEGIN');
+      const { rows: [build] } = await client.query(
+        'SELECT id,owner_id FROM builds WHERE id=$1 FOR UPDATE', [req.params.id]);
+      if (!build) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ errors: { _general: 'Build not found.' } });
+      }
+      if (build.owner_id === req.session.userId) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ errors: { _general: 'You cannot repost your own build.' } });
+      }
+      const removed = await client.query(
+        'DELETE FROM reposts WHERE user_id=$1 AND build_id=$2 RETURNING user_id',
+        [req.session.userId, req.params.id]);
+      if (!removed.rowCount) {
+        await client.query('INSERT INTO reposts(user_id,build_id) VALUES($1,$2)',
+          [req.session.userId, req.params.id]);
+      }
+      const result = await state(client, req.params.id, req.session.userId);
+      await client.query('COMMIT');
+      res.json(result);
+    } catch (error) {
+      if (client) await client.query('ROLLBACK').catch(() => {});
+      next(error);
+    } finally { client?.release(); }
+  });
 
   router.post('/builds/:id/rating', login, async (req, res, next) => {
     const stars = req.body?.stars;

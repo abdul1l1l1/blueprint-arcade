@@ -5,6 +5,12 @@
   const content = document.getElementById('profile-content');
   const buildsState = document.getElementById('profile-builds-state');
   const buildsGrid = document.getElementById('my-builds');
+  const repostsState = document.getElementById('profile-reposts-state');
+  const repostsGrid = document.getElementById('my-reposts');
+  const buildsSection = document.getElementById('profile-build-section');
+  const repostsSection = document.getElementById('profile-reposts-section');
+  const buildsTab = document.getElementById('profile-builds-tab');
+  const repostsTab = document.getElementById('profile-reposts-tab');
   const savedNotice = document.getElementById('saved-notice');
   const params = new URLSearchParams(location.search);
   const requestedUsername = params.get('username');
@@ -13,6 +19,18 @@
   let me = null;
   let authChecked = false;
   let requestNumber = 0;
+
+  function selectTab(name) {
+    const showReposts = name === 'reposts';
+    buildsSection.hidden = showReposts;
+    repostsSection.hidden = !showReposts;
+    buildsTab.setAttribute('aria-selected', String(!showReposts));
+    repostsTab.setAttribute('aria-selected', String(showReposts));
+    buildsTab.tabIndex = showReposts ? -1 : 0;
+    repostsTab.tabIndex = showReposts ? 0 : -1;
+    buildsTab.classList.toggle('is-active', !showReposts);
+    repostsTab.classList.toggle('is-active', showReposts);
+  }
 
   function profilePanel(title, message, options = {}) {
     content.hidden = true;
@@ -76,6 +94,19 @@
         onRefresh: () => loadProfile()
       });
     }
+    const reposts = Array.isArray(data.reposts) ? data.reposts : [];
+    document.getElementById('profile-reposts-label').textContent = `${reposts.length} ${reposts.length === 1 ? 'repost' : 'reposts'}`;
+    repostsGrid.replaceChildren();
+    if (!reposts.length) {
+      BuildsUI.statePanel(repostsState, 'No reposts yet', 'Builds this creator reposts will appear here.');
+    } else {
+      repostsState.replaceChildren();
+      BuildsUI.renderCards(repostsGrid, reposts, {
+        me: authChecked ? me : null,
+        onRefresh: () => loadProfile()
+      });
+    }
+    selectTab('builds');
     content.hidden = false;
     state.replaceChildren();
     if (!authChecked) {
@@ -157,4 +188,13 @@
   }
 
   document.addEventListener('DOMContentLoaded', start);
+  buildsTab.addEventListener('click', () => selectTab('builds'));
+  repostsTab.addEventListener('click', () => selectTab('reposts'));
+  [buildsTab, repostsTab].forEach((tab) => tab.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    const next = tab === buildsTab ? repostsTab : buildsTab;
+    selectTab(next === repostsTab ? 'reposts' : 'builds');
+    next.focus();
+  }));
 })();

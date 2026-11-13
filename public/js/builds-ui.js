@@ -73,6 +73,12 @@
     const article = node('article', 'card build-tile');
     article.dataset.buildId = String(build.id);
     article.__baBuild = build;
+    const detailHref = `/build.html?id=${encodeURIComponent(build.id)}`;
+    article.classList.add('is-detail-clickable');
+    article.addEventListener('click', (event) => {
+      if (event.target.closest('a,button,input,textarea,select,summary,details,.social-tools')) return;
+      window.location.assign(detailHref);
+    });
     const cover = node('div', 'build-cover');
     const imageUrl = Array.isArray(build.image_urls) ? safeImageUrl(build.image_urls[0]) : '';
     if (imageUrl) {
@@ -99,8 +105,19 @@
     if (window.BAApprovedImages?.isApprovedUrl(imageUrl)) {
       body.append(node('p', 'illustration-label', window.BAApprovedImages.label));
     }
+    if (build.is_repost && build.reposted_by) {
+      const reposted = node('p', 'repost-attribution');
+      const reposter = node('a', '', build.reposted_display_name || build.reposted_by);
+      reposter.href = `/profile.html?username=${encodeURIComponent(build.reposted_by)}`;
+      reposted.append(reposter, document.createTextNode(' reposted'));
+      body.append(reposted);
+    }
     const titleRow = node('div', 'build-title-row');
-    titleRow.append(node('h3', '', build.title || 'Untitled build'));
+    const title = node('h3');
+    const detailLink = node('a', 'build-detail-link', build.title || 'Untitled build');
+    detailLink.href = detailHref;
+    title.append(detailLink);
+    titleRow.append(title);
     const stats = node('span', 'build-stats', `Rating ${Number(build.avg_rating || 0).toFixed(1)} · ${Number(build.like_count || 0)} likes`);
     titleRow.append(stats);
     body.append(titleRow);

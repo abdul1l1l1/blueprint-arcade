@@ -1,0 +1,28 @@
+.build-detail-page { max-width: 1080px; }
+.build-detail-card { overflow: hidden; padding: 0; }
+.build-detail-heading { padding: clamp(20px, 3vw, 34px) clamp(18px, 4vw, 38px) 18px; }
+.build-detail-heading h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.04em; line-height: 1.1; overflow-wrap: anywhere; }
+.build-detail-heading .build-credit { margin-top: 10px; }
+.detail-cover { aspect-ratio: 16 / 9; max-height: min(68vw, 650px); border-bottom: 1px solid var(--border); background: #12233b; }
+.detail-cover img { object-fit: contain; }
+.detail-action-slot { padding: 13px clamp(14px, 3vw, 28px); border-bottom: 1px solid var(--border); background: var(--card); }
+.detail-action-slot .social-actions { gap: 8px; }
+.detail-action-slot .social-counts { margin-left: auto; }
+.detail-action-slot .social-status { margin-top: 8px; }
+.detail-action-slot .social-status input { width: min(100%, 520px); min-height: 38px; margin-top: 7px; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--paper); color: var(--ink); }
+.detail-comments, .detail-information { padding: clamp(18px, 3vw, 30px) clamp(18px, 4vw, 38px); }
+.detail-comments { border-bottom: 1px solid var(--border); }
+.detail-comments h2, .detail-information h2 { margin: 0 0 13px; font-size: 20px; letter-spacing: -.025em; }
+.detail-comments .comment-panel { padding: 0; background: transparent; }
+.detail-information .build-description-copy { margin: 0; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.7; }
+.detail-information .build-meta { margin-top: 18px; }
+.detail-information .build-tags { margin-top: 11px; }
+
+@media (max-width: 760px) {
+  .build-detail-page { padding-top: 23px; }
+  .detail-cover { aspect-ratio: 4 / 3; max-height: 70vh; }
+  .detail-action-slot .social-counts { width: 100%; margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .build-tile { transition: none; }
+}
