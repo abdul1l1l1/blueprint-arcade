@@ -10,6 +10,7 @@
     return element;
   };
   const safeImage = (value) => {
+    if (window.BAUploads?.uploadId(value)) return value;
     if (value === '/media/builds/construction-site-c40bfeba.png') return value;
     if (window.BAApprovedImages?.isApprovedUrl(value)) return value;
     try {
@@ -46,11 +47,12 @@
     image.src = urls[0];
     image.alt = `Build image 1 of ${urls.length}`;
     let illustrationLabel = card.querySelector('.illustration-label');
-    if (!illustrationLabel) {
+    if (!illustrationLabel && !card.hasAttribute('data-build-detail')) {
       illustrationLabel = node('p', 'illustration-label', window.BAApprovedImages?.label || '');
       cover.insertAdjacentElement('afterend', illustrationLabel);
     }
     const updateLabel = url => {
+      if (!illustrationLabel) return;
       const illustrated = !!window.BAApprovedImages?.isApprovedUrl(url);
       illustrationLabel.hidden = !illustrated;
       if (illustrated) image.alt = `${window.BAApprovedImages.label}: ${build.title || 'demo build'}`;
@@ -92,12 +94,15 @@
     const buildId = card.dataset.buildId;
     if (!buildId) return;
     mounted.add(card);
+    const isDetail = card.hasAttribute('data-build-detail');
+    const build = card.__baBuild || {};
+    const currentUser = card.__baMe || null;
     mountCarousel(card, buildId);
     const panel = node('section', 'social-tools');
     panel.setAttribute('aria-label', 'Build community actions');
     const actions = node('div', 'social-actions');
     const like = node('button', 'btn', 'Like');
-    const favorite = node('button', 'btn', 'Save');
+    const favorite = node('button', 'btn', isDetail ? 'Save to Favorites' : 'Save');
     like.type = favorite.type = 'button';
     const counts = node('span', 'social-counts', 'Loading community activity…');
     const ratingLabel = node('span', '', 'Rate:');
@@ -115,14 +120,27 @@
     }
     const commentsToggle = node('button', 'btn', 'Comments');
     commentsToggle.type = 'button';
-    const status = node('p', 'social-status');
+    commentsToggle.hidden = isDetail;
+    const status = node('div', 'social-status');
     status.setAttribute('role', 'status');
-    actions.append(like, favorite, ratingLabel, rating, commentsToggle, counts);
-    panel.append(actions, status);
+    let share;
+    let repost;
+    if (isDetail) {
+      share = node('button', 'btn', 'Share');
+      share.type = 'button';
+      share.setAttribute('aria-label', 'Share this build');
+      repost = node('button', 'btn', 'Repost');
+      repost.type = 'button';
+      repost.setAttribute('aria-label', 'Repost this build');
+      actions.append(like, ratingLabel, rating, favorite, share, repost, counts);
+    } else {
+      actions.append(like, favorite, ratingLabel, rating, commentsToggle, counts);
+    }
 
     const comments = node('div', 'comment-panel');
-    comments.hidden = true;
+    comments.hidden = !isDetail;
     const commentsTitle = node('h4', '', 'Conversation');
+    commentsTitle.hidden = isDetail;
     const list = node('div', 'comment-list');
     const form = node('form', 'comment-form');
     const textarea = document.createElement('textarea');
@@ -135,8 +153,16 @@
     send.type = 'submit';
     form.append(textarea, send);
     comments.append(commentsTitle, list, form);
-    panel.append(comments);
-    card.append(panel);
+    const detailActionSlot = card.querySelector('[data-social-actions]');
+    const detailCommentsSlot = card.querySelector('[data-social-comments]');
+    const messageHost = isDetail && detailActionSlot ? detailActionSlot : panel;
+    if (isDetail && detailActionSlot && detailCommentsSlot) {
+      detailActionSlot.append(actions, status);
+      detailCommentsSlot.append(comments);
+    } else {
+      panel.append(actions, status, comments);
+      card.append(panel);
+    }
 
     let state = null;
     let writePending = false;
@@ -144,13 +170,23 @@
     const endpoint = `/api/social/builds/${encodeURIComponent(buildId)}`;
 
     function showStatus(message, error = false) {
-      status.textContent = message || '';
+      status.replaceChildren();
+      if (message) status.append(document.createTextNode(message));
       status.classList.toggle('is-error', error);
+    }
+    function updateRepostButton() {
+      if (!repost) return;
+      const isOwner = currentUser && String(currentUser.id) === String(build.owner_id);
+      repost.disabled = Boolean(isOwner);
+      repost.textContent = isOwner ? 'Your build' : (state?.reposted ? 'Reposted' : 'Repost');
+      repost.setAttribute('aria-pressed', String(Boolean(state?.reposted)));
     }
     function renderState(value) {
       state = value;
       like.textContent = value.liked ? 'Liked' : 'Like';
-      favorite.textContent = value.favorited ? 'Saved' : 'Save';
+      favorite.textContent = value.favorited
+        ? (isDetail ? 'Saved to Favorites' : 'Saved')
+        : (isDetail ? 'Save to Favorites' : 'Save');
       like.classList.toggle('is-active', Boolean(value.liked));
       favorite.classList.toggle('is-active', Boolean(value.favorited));
       like.setAttribute('aria-pressed', String(Boolean(value.liked)));
@@ -165,6 +201,7 @@
         button.classList.toggle('is-active', selected);
         button.setAttribute('aria-pressed', String(selected));
       });
+      updateRepostButton();
     }
     async function loadState() {
       counts.textContent = 'Loading community activity…';
@@ -184,7 +221,7 @@
     async function write(path, body) {
       if (writePending) return;
       writePending = true;
-      const controls = [like, favorite, ...stars, send];
+      const controls = [like, favorite, ...stars, send, ...(repost ? [repost] : [])];
       controls.forEach((control) => { control.disabled = true; });
       showStatus('Saving…');
       try {
@@ -195,23 +232,57 @@
             detail: { buildId: String(buildId), favorited: Boolean(result.favorited) }
           }));
         }
-        showStatus('Saved.');
+        showStatus(path === 'repost'
+          ? (result.reposted ? 'Build reposted.' : 'Repost removed.')
+          : 'Saved.');
         document.dispatchEvent(new CustomEvent('blueprint:social-change', { detail: { buildId, action: path } }));
       } catch (error) {
         if (error.status === 401) {
           showStatus('Please log in to use community actions.', true);
-          if (!panel.querySelector('.login-hint')) panel.append(loginLink());
+          if (!messageHost.querySelector('.login-hint')) messageHost.append(loginLink());
         } else {
           showStatus(error && error.data && error.data.errors ? Object.values(error.data.errors).filter(Boolean).join(' ') : 'Could not save that change. Try again.', true);
         }
       } finally {
         writePending = false;
         controls.forEach((control) => { control.disabled = false; });
+        updateRepostButton();
       }
     }
     like.addEventListener('click', () => write('like'));
     favorite.addEventListener('click', () => write('favorite'));
     stars.forEach((button) => button.addEventListener('click', () => write('rating', { stars: Number(button.dataset.rating) })));
+    if (repost) repost.addEventListener('click', () => write('repost'));
+    if (share) share.addEventListener('click', async () => {
+      const url = new URL(`/build.html?id=${encodeURIComponent(buildId)}`, location.origin).href;
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title: build.title || 'Blueprint Arcade build', text: build.description || '', url });
+          showStatus('Share sheet opened.');
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') {
+            showStatus('Share cancelled.');
+            return;
+          }
+        }
+      }
+      try {
+        if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable.');
+        await navigator.clipboard.writeText(url);
+        showStatus('Build link copied to clipboard.');
+      } catch {
+        showStatus('Copy this build link to share:');
+        const input = document.createElement('input');
+        input.type = 'url';
+        input.readOnly = true;
+        input.value = url;
+        input.setAttribute('aria-label', 'Copyable build link');
+        status.append(input);
+        input.focus();
+        input.select();
+      }
+    });
 
     function renderComments(items) {
       list.replaceChildren();
@@ -272,7 +343,7 @@
       } catch (error) {
         if (error.status === 401) {
           showStatus('Please log in to comment.', true);
-          if (!panel.querySelector('.login-hint')) panel.append(loginLink());
+          if (!messageHost.querySelector('.login-hint')) messageHost.append(loginLink());
         } else {
           showStatus(error && error.data && error.data.errors ? Object.values(error.data.errors).filter(Boolean).join(' ') : 'Comment could not be posted. Your text is still here.', true);
         }
@@ -282,6 +353,7 @@
       }
     });
     loadState();
+    if (isDetail) loadComments();
   }
 
   function scan(root = document) {
@@ -297,4 +369,5 @@
       observer.observe(document.body, { childList: true, subtree: true });
     }
   });
+  window.BASocial = { scan, mount: mountSocial };
 })();

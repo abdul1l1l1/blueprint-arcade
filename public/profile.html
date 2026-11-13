@@ -37,10 +37,19 @@
             </div>
           </div>
           <div id="saved-notice" class="saved-notice" hidden></div>
-          <section aria-labelledby="profile-build-title">
+          <div class="profile-tabs" role="tablist" aria-label="Profile posts">
+            <button id="profile-builds-tab" class="btn is-active" type="button" role="tab" aria-selected="true" aria-controls="profile-build-section">Builds</button>
+            <button id="profile-reposts-tab" class="btn" type="button" role="tab" aria-selected="false" aria-controls="profile-reposts-section" tabindex="-1">Reposted</button>
+          </div>
+          <section id="profile-build-section" role="tabpanel" aria-labelledby="profile-builds-tab">
             <div class="build-section-heading"><h2 id="profile-build-title">Builds</h2><p id="profile-build-label"></p></div>
             <div id="profile-builds-state" class="build-state" aria-live="polite"></div>
             <div class="build-cards" id="my-builds"></div>
+          </section>
+          <section id="profile-reposts-section" role="tabpanel" aria-labelledby="profile-reposts-tab" hidden>
+            <div class="build-section-heading"><h2>Reposted</h2><p id="profile-reposts-label"></p></div>
+            <div id="profile-reposts-state" class="build-state" aria-live="polite"></div>
+            <div class="build-cards" id="my-reposts"></div>
           </section>
         </section>
       </main>

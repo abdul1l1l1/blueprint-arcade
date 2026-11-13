@@ -89,8 +89,8 @@ test('1. Node 24, healthy database, static pages, and SQL-backed session schema'
   assert.equal(health.data.db, 'connected');
   const tables = await database.query(
     `SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema = $1 AND table_type = 'BASE TABLE'`, [schema]);
-  assert.equal(tables.rows[0].n, 12);
-  for (const page of ['/', '/login.html', '/register.html', '/games.html', '/game.html', '/compare.html', '/top10.html', '/post.html', '/profile.html', '/settings.html']) {
+  assert.equal(tables.rows[0].n, 13);
+  for (const page of ['/', '/login.html', '/register.html', '/games.html', '/game.html', '/compare.html', '/top10.html', '/post.html', '/profile.html', '/settings.html', '/build.html']) {
     const result = await request(page);
     assert.equal(result.status, 200);
     assert.match(result.headers.get('content-type'), /text\/html/);

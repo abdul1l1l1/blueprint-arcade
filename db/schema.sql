@@ -118,6 +118,15 @@ CREATE TABLE IF NOT EXISTS favorites (
 );
 
 -- Stats views
+CREATE TABLE IF NOT EXISTS reposts (
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  build_id   UUID NOT NULL REFERENCES builds(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, build_id)
+);
+CREATE INDEX IF NOT EXISTS idx_reposts_user_order ON reposts(user_id, created_at DESC, build_id);
+CREATE INDEX IF NOT EXISTS idx_reposts_build ON reposts(build_id);
+
 CREATE OR REPLACE VIEW build_stats AS
 SELECT b.id AS build_id,
        COALESCE(AVG(r.stars), 0) AS avg_rating,

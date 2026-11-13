@@ -1,7 +1,7 @@
 // Stats API — Top 10 Builds (rating x likes) and profile stats.
 const express = require('express');
 const { pool } = require('../db/pool');
-const { buildSelect } = require('./build-data');
+const { buildSelect, repostSelect } = require('./build-data');
 
 function createStatsRouter(database = pool) {
 const router = express.Router();
@@ -29,7 +29,13 @@ router.get('/profile/:username', async (req, res, next) => {
     if (!profile.rows[0]) return res.status(404).json({ errors: { _general: 'Profile not found.' } });
     const { rows } = await database.query(
       `${buildSelect} WHERE b.owner_id=$1 ORDER BY b.is_pinned DESC,b.created_at DESC,b.id`, [profile.rows[0].id]);
-    res.json({ profile: profile.rows[0], builds: rows });
+    const reposted = await database.query(
+      `${repostSelect} WHERE r.user_id=$1 ORDER BY r.created_at DESC,b.id`, [profile.rows[0].id]);
+    res.json({
+      profile: profile.rows[0],
+      builds: rows,
+      reposts: reposted.rows.map(build => ({ ...build, is_repost: true })),
+    });
   } catch (err) { next(err); }
 });
 

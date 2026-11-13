@@ -23,6 +23,9 @@
 .build-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 265px), 1fr)); gap: 17px; }
 .build-tile { display: flex; flex-direction: column; overflow: hidden; padding: 0; transition: transform 150ms ease, border-color 150ms ease; }
 .build-tile:hover { transform: translateY(-2px); border-color: var(--slate); }
+.build-tile.is-detail-clickable { cursor: pointer; }
+.build-detail-link { color: inherit; text-decoration: none; }
+.build-detail-link:hover { color: var(--slate); text-decoration: underline; }
 .build-cover { position: relative; display: grid; aspect-ratio: 1.72 / 1; place-items: center; overflow: hidden; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(137,207,240,.32), rgba(108,155,209,.13)); }
 .build-cover img { width: 100%; height: 100%; object-fit: cover; }
 .build-cover.is-empty { background: rgba(137,207,240,.13); }
@@ -43,6 +46,9 @@
 .build-meta .tag { font-size: 11px; }
 .build-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
 .build-tags .tag { background: rgba(108,155,209,.12); font-size: 10px; }
+.repost-attribution { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+.repost-attribution a { color: var(--slate); font-weight: 700; text-decoration: none; }
+.repost-attribution a:hover { text-decoration: underline; }
 .build-tile-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: auto; padding-top: 14px; }
 .build-tile-actions .btn { padding: 6px 10px; font-size: 12px; }
 .build-state { margin: 14px 0; }
@@ -70,6 +76,9 @@
 .profile-stat strong { font-size: 22px; letter-spacing: -.04em; }
 .profile-stat span { color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
 .saved-notice { margin-top: 16px; padding: 12px 15px; border: 1px solid rgba(108,155,209,.45); border-radius: var(--radius); background: rgba(137,207,240,.15); color: var(--ink); }
+.profile-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 14px; }
+.profile-tabs [role="tab"].is-active { border-color: var(--slate); background: rgba(108,155,209,.14); color: var(--ink); }
+.profile-tabs [role="tab"]:focus-visible { outline: 3px solid var(--slate); outline-offset: 2px; }
 
 .form-page { max-width: 780px; }
 .build-form-card { padding: clamp(17px, 3vw, 27px); }

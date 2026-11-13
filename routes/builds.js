@@ -1,7 +1,7 @@
 // Phase 3: public browsing, transactional owner-only CRUD, max-three pin rule.
 const express = require('express');
 const { pool } = require('../db/pool');
-const { buildSelect, types, budgets, validId, failure, validateBuild } = require('./build-data');
+const { buildSelect, repostSelect, types, budgets, validId, failure, validateBuild } = require('./build-data');
 const sorts = Object.freeze({
   newest: 'b.created_at DESC, b.id',
   rating: 'avg_rating DESC, b.created_at DESC, b.id',
@@ -34,8 +34,27 @@ function createBuildsRouter(database = pool) {
       if (build_type) add('b.build_type=?', build_type);
       if (budget_tier) add('b.budget_tier=?', budget_tier);
       if (tag) add('EXISTS (SELECT 1 FROM build_tags bt WHERE bt.build_id=b.id AND bt.tag=?)', tag);
-      const { rows } = await database.query(
-        `${buildSelect} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY ${sorts[sort]}`, values);
+      const filter = where.length ? `WHERE ${where.join(' AND ')}` : '';
+      const [originals, reposts] = await Promise.all([
+        database.query(`${buildSelect} ${filter}`, values),
+        database.query(`${repostSelect} ${filter}`, values),
+      ]);
+      const rows = [
+        ...originals.rows.map(build => ({ ...build, is_repost: false })),
+        ...reposts.rows.map(build => ({ ...build, is_repost: true })),
+      ];
+      const activityTime = build => new Date(build.reposted_at || build.created_at).getTime() || 0;
+      rows.sort((a, b) => {
+        if (sort === 'rating' && Number(b.avg_rating) !== Number(a.avg_rating)) {
+          return Number(b.avg_rating) - Number(a.avg_rating);
+        }
+        if (sort === 'likes' && Number(b.like_count) !== Number(a.like_count)) {
+          return Number(b.like_count) - Number(a.like_count);
+        }
+        return activityTime(b) - activityTime(a)
+          || String(a.id).localeCompare(String(b.id))
+          || String(a.reposted_by_id || '').localeCompare(String(b.reposted_by_id || ''));
+      });
       res.json({ builds: rows });
     } catch (err) { next(err); }
   });

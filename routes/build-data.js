@@ -11,6 +11,11 @@ const buildSelect = `SELECT b.id, b.owner_id, b.game_id, b.title, b.description,
   FROM builds b JOIN games g ON g.id=b.game_id JOIN users u ON u.id=b.owner_id
   LEFT JOIN profiles p ON p.user_id=u.id
   LEFT JOIN build_stats bs ON bs.build_id=b.id`;
+const repostSelect = `${buildSelect.replace('SELECT b.id,',
+  'SELECT r.user_id AS reposted_by_id, ru.username AS reposted_by, rp.display_name AS reposted_display_name, r.created_at AS reposted_at, b.id,')}
+  JOIN reposts r ON r.build_id=b.id
+  JOIN users ru ON ru.id=r.user_id
+  LEFT JOIN profiles rp ON rp.user_id=ru.id`;
 const types = ['freeform', 'interior', 'renovation', 'city-planning', 'sandbox'];
 const budgets = ['starter', 'mid', 'luxury', 'unlimited'];
 const validId = id => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -64,4 +69,4 @@ async function validateBuild(client, body, current, ownerId) {
   return { title, game_id: data.game_id, description: (data.description ?? '').trim(), image_urls, budget_tier: data.budget_tier, build_type: data.build_type, tags, is_pinned };
 }
 
-module.exports = { buildSelect, types, budgets, validId, failure, validateBuild };
+module.exports = { buildSelect, repostSelect, types, budgets, validId, failure, validateBuild };
