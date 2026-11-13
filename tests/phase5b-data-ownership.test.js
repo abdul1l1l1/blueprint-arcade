@@ -204,67 +204,67 @@ test('5B. public API responses omit all account emails and password hashes', asy
   }
 });
 
-test('5B. My Data controls and deletion guidance appear only in the profile settings', async () => {
-  const html = readFileSync(path.join(__dirname, '../public/profile.html'), 'utf8');
-  const script = readFileSync(path.join(__dirname, '../public/js/profile.js'), 'utf8');
-  assert.match(html, /id="profile-data-tools"[^>]*hidden/);
-  assert.match(html, /href="\/api\/auth\/me\/data"[^>]*download/);
-  assert.match(html, />Download My Data</);
-  assert.match(html, /Delete a build/);
-  assert.match(html, /request account deletion from the site owner/i);
-  assert.match(script, /dataTools\.hidden = !isOwner/);
-  assert.match(script, /String\(me\.id\) === String\(profile\.id\)/);
+test('5B. My Data and deletion controls live in Settings', async () => {
+  const settings = readFileSync(path.join(__dirname, '../public/settings.html'), 'utf8');
+  const profile = readFileSync(path.join(__dirname, '../public/profile.html'), 'utf8');
+  const ownership = readFileSync(path.join(__dirname, '../docs/data-ownership.md'), 'utf8');
+  assert.match(settings, /id="settings-content" hidden/);
+  assert.match(settings, /href="\/api\/auth\/me\/data"[^>]*download/);
+  assert.match(settings, />Download My Data</);
+  assert.match(settings, /Delete individual builds from/);
+  assert.match(settings, /id="delete-account-password"[^>]*required/);
+  assert.match(settings, /id="delete-account-confirmation"[^>]*required/);
+  assert.match(settings, /Delete My Account/);
+  assert.match(profile, /href="\/settings\.html"/);
+  assert.doesNotMatch(profile, /profile-data-tools|Download My Data/);
+  assert.match(ownership, /type `DELETE`/);
+  assert.match(ownership, /uploaded image objects/);
 });
 
-test('5B. My Data controls are visible only on the logged-in user profile', async () => {
-  const source = readFileSync(path.join(__dirname, '../public/js/profile.js'), 'utf8');
-  async function toolsHidden(sessionUser, profileUser) {
+test('5B. Settings controls are hidden without a logged-in user', async () => {
+  const source = readFileSync(path.join(__dirname, '../public/js/settings.js'), 'utf8');
+  async function settingsHidden(sessionUser) {
     const elements = new Map();
     const makeElement = () => ({
       hidden: true,
+      disabled: false,
+      value: '',
       textContent: '',
       replaceChildren() {},
       append() {},
+      addEventListener() {},
       setAttribute() {},
+      focus() {},
     });
+    const handlers = {};
     const document = {
-      title: '',
       getElementById(id) {
         if (!elements.has(id)) elements.set(id, makeElement());
         return elements.get(id);
       },
-      querySelector() { return { setAttribute() {} }; },
       addEventListener(name, callback) { handlers[name] = callback; },
     };
-    const handlers = {};
     const profile = {
-      id: profileUser.id,
-      username: profileUser.username,
-      display_name: profileUser.username,
-      bio: '',
-      avatar_url: '',
-      build_count: 0,
-      pinned_count: 0,
+      id: sessionUser?.id,
+      username: sessionUser?.username,
     };
     const context = {
       document,
-      location: { search: `?username=${encodeURIComponent(profile.username)}` },
-      URLSearchParams,
       getMe: async () => ({ user: sessionUser }),
-      api: async () => ({ profile, builds: [] }),
+      api: async () => ({ deleted: true }),
+      window: { confirm: () => false },
       BuildsUI: {
         statePanel() {},
-        node(_tag, _className, text) { return { textContent: text, setAttribute() {} }; },
-        safeImageUrl() { return ''; },
-        renderCards() {},
+        node(_tag, _className, text) { return { textContent: text, append() {}, setAttribute() {} }; },
+        apiMessage() { return 'Request failed.'; },
       },
     };
     vm.runInNewContext(source, context);
     await handlers.DOMContentLoaded();
-    return elements.get('profile-data-tools').hidden;
+    return elements.get('settings-content').hidden;
   }
 
-  assert.equal(await toolsHidden(owner.user, owner.user), false);
-  assert.equal(await toolsHidden(other.user, owner.user), true);
-  assert.equal(await toolsHidden(null, owner.user), true);
+  assert.equal(await settingsHidden(owner.user), false);
+  assert.equal(await settingsHidden(other.user), false);
+  assert.equal(await settingsHidden(null), true);
 });

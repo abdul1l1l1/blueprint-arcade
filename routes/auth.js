@@ -18,7 +18,7 @@ async function signIn(req, userId) {
   await sessionCall(req.session, 'save');
 }
 
-function createAuthRouter(database = pool) {
+function createAuthRouter(database = pool, imageStorage = require('../db/image-storage')) {
   const router = express.Router();
   router.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
@@ -205,6 +205,92 @@ function createAuthRouter(database = pool) {
     } catch (err) {
       if (transaction) await client.query('ROLLBACK').catch(() => {});
       next(err);
+    } finally {
+      client?.release();
+    }
+  });
+
+  router.delete('/me', async (req, res, next) => {
+    const userId = req.session?.userId;
+    if (!userId) {
+      return res.status(401).json({ errors: { _general: 'Log in to delete your account.' } });
+    }
+    if (!req.is('application/json') || req.get('Sec-Fetch-Site') === 'cross-site') {
+      return res.status(403).json({ errors: { _general: 'Submit this request from Settings.' } });
+    }
+
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    if (req.body?.confirmation !== 'DELETE' || !password) {
+      return res.status(400).json({ errors: { _general: 'Enter your password and type DELETE to confirm.' } });
+    }
+    if (Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(401).json({ errors: { password: 'The password is incorrect.' } });
+    }
+
+    let client;
+    let transaction = false;
+    try {
+      client = await database.connect();
+      await client.query('BEGIN');
+      transaction = true;
+
+      const { rows: [account] } = await client.query(
+        'SELECT password_hash FROM users WHERE id=$1 FOR UPDATE',
+        [userId],
+      );
+      if (!account || !(await bcrypt.compare(password, account.password_hash))) {
+        await client.query('ROLLBACK');
+        transaction = false;
+        return res.status(401).json({ errors: { password: 'The password is incorrect.' } });
+      }
+
+      const activeUploads = await client.query(
+        `SELECT EXISTS (
+           SELECT 1 FROM image_uploads
+           WHERE owner_id=$1 AND created_at > now() - interval '11 minutes'
+         ) AS active`,
+        [userId],
+      );
+      if (activeUploads.rows[0]?.active) {
+        await client.query('ROLLBACK');
+        transaction = false;
+        return res.status(409).json({
+          errors: { _general: 'An image transfer link may still be active. Wait 11 minutes after your last image upload, then try again.' },
+        });
+      }
+
+      const uploads = await client.query(
+        'SELECT staging_key, object_key FROM image_uploads WHERE owner_id=$1',
+        [userId],
+      );
+      const sharedUploads = await client.query(
+        `SELECT EXISTS (
+           SELECT 1 FROM image_uploads i
+           JOIN builds b ON ('/media/uploads/' || i.id::text || '.webp')=ANY(b.image_urls)
+           WHERE i.owner_id=$1 AND b.owner_id<>$1
+         ) AS shared`,
+        [userId],
+      );
+      if (sharedUploads.rows[0]?.shared) {
+        await client.query('ROLLBACK');
+        transaction = false;
+        return res.status(409).json({
+          errors: { _general: 'A build owned by another user references one of your uploaded images. Ask its owner to remove that image before deleting your account.' },
+        });
+      }
+      await imageStorage.deleteObjects(uploads.rows);
+      await client.query(`DELETE FROM "session" WHERE sess->>'userId'=$1`, [userId]);
+      const deleted = await client.query('DELETE FROM users WHERE id=$1 RETURNING id', [userId]);
+      if (!deleted.rows.length) throw new Error('Account deletion did not remove the requested account.');
+
+      await client.query('COMMIT');
+      transaction = false;
+      await sessionCall(req.session, 'destroy').catch(() => {});
+      res.clearCookie(COOKIE_NAME, cookieOptions);
+      return res.json({ deleted: true });
+    } catch (error) {
+      if (transaction) await client.query('ROLLBACK').catch(() => {});
+      next(error);
     } finally {
       client?.release();
     }

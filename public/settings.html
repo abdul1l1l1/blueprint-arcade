@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
+  <meta name="description" content="Manage your Blueprint Arcade data and account." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
+  <link rel="stylesheet" href="/css/settings.css" />
+</head>
+<body>
+  <div class="layout builds-layout">
+    <aside class="sidebar">
+      <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
+      <h4>Builds</h4><a href="/post.html">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html">My Profile</a><a href="/settings.html" class="active" aria-current="page">Settings</a>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <a class="btn" href="/">Showcase</a>
+        <a class="btn" href="/favorites.html">Favorites</a>
+        <button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button>
+        <a class="btn btn-primary" href="/post.html">Post a Build</a>
+      </header>
+      <main class="settings-page">
+        <div id="settings-state" class="build-state" aria-live="polite"></div>
+        <section id="settings-content" hidden>
+          <header class="settings-heading">
+            <p class="builds-eyebrow">Account</p>
+            <h1>Settings</h1>
+            <p id="settings-account" class="settings-muted"></p>
+          </header>
+
+          <section class="card settings-card" aria-labelledby="data-settings-title">
+            <h2 id="data-settings-title">Your data</h2>
+            <p>Download a JSON copy of your profile, builds and image references, comments, ratings, likes, and favorites.</p>
+            <p><a class="btn" id="download-my-data" href="/api/auth/me/data" download>Download My Data</a></p>
+            <p>Delete individual builds from <a href="/profile.html">My Profile</a>. Deleting a build also removes its tags and related comments, ratings, likes, and favorites.</p>
+          </section>
+
+          <section class="card settings-card settings-danger" aria-labelledby="delete-account-title">
+            <h2 id="delete-account-title">Delete account</h2>
+            <p>This permanently removes your account, profile, builds, related activity, sessions, and uploaded build images. This cannot be undone.</p>
+            <p>After an image upload, wait 11 minutes before deleting your account so its temporary transfer link expires.</p>
+            <p>If another builder's post uses one of your uploaded images, you must ask them to remove it before deleting your account.</p>
+            <form id="delete-account-form" novalidate>
+              <input id="settings-username" type="text" name="username" autocomplete="username" hidden />
+              <div class="field">
+                <label for="delete-account-password">Current password</label>
+                <input id="delete-account-password" name="password" type="password" autocomplete="current-password" required />
+              </div>
+              <div class="field">
+                <label for="delete-account-confirmation">Type DELETE to continue</label>
+                <input id="delete-account-confirmation" name="confirmation" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required aria-describedby="delete-account-help" />
+                <small id="delete-account-help">You will be asked to confirm once more before deletion.</small>
+              </div>
+              <p id="delete-account-error" class="error" role="alert" hidden></p>
+              <button class="btn btn-danger" id="delete-account-submit" type="submit">Delete My Account</button>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/settings.js"></script>
+</body>
+</html>

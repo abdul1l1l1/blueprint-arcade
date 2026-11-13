@@ -6,8 +6,9 @@ const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const { pool } = require('./db/pool');
 const { createAuthRouter, COOKIE_NAME, cookieOptions } = require('./routes/auth');
+const imageStorage = require('./db/image-storage');
 
-function createApp({ database = pool, store, env = process.env } = {}) {
+function createApp({ database = pool, store, env = process.env, storage = imageStorage } = {}) {
   if (!env.SESSION_SECRET) throw new Error('SESSION_SECRET is required; configure it in Replit Secrets.');
   const app = express();
   app.disable('x-powered-by');
@@ -32,12 +33,13 @@ function createApp({ database = pool, store, env = process.env } = {}) {
       res.status(503).json({ status: 'error', app: 'Blueprint Arcade', db: 'unavailable' });
     }
   });
-  app.use('/api/auth', createAuthRouter(database));
+  app.use('/api/auth', createAuthRouter(database, storage));
   // Completed phases share the configured QA/runtime database dependency.
   app.use('/api/builds', require('./routes/builds').createBuildsRouter(database));
   app.use('/api/games', require('./routes/games').createGamesRouter(database));
   app.use('/api/social', require('./routes/social').createSocialRouter(database));
   app.use('/api/stats', require('./routes/stats').createStatsRouter(database));
+  app.use(require('./routes/uploads').createUploadsRouter(database, storage));
   app.use(require('./routes/approved-assets').createApprovedAssetsRouter());
   app.use('/api', (req, res) => res.status(404).json({ errors: { _general: 'API endpoint not found.' } }));
   app.use(express.static(path.join(__dirname, 'public')));
