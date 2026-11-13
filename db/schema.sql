@@ -13,6 +13,17 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_ci ON users (lower(username));
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_ci ON users (lower(email));
 
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash  CHAR(64) NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user
+  ON password_reset_tokens(user_id, expires_at DESC);
+
 -- Initialized explicitly with db:init, never by a production startup hook.
 CREATE TABLE IF NOT EXISTS "session" (
   sid VARCHAR PRIMARY KEY,
@@ -126,6 +137,20 @@ CREATE TABLE IF NOT EXISTS reposts (
 );
 CREATE INDEX IF NOT EXISTS idx_reposts_user_order ON reposts(user_id, created_at DESC, build_id);
 CREATE INDEX IF NOT EXISTS idx_reposts_build ON reposts(build_id);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id           BIGSERIAL PRIMARY KEY,
+  recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  actor_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+  build_id     UUID NOT NULL REFERENCES builds(id) ON DELETE CASCADE,
+  event_type   TEXT NOT NULL CHECK (event_type IN ('like', 'rating', 'comment', 'repost')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at      TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread
+  ON notifications(recipient_id, created_at DESC, id DESC) WHERE read_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_notifications_user_order
+  ON notifications(recipient_id, created_at DESC, id DESC);
 
 CREATE OR REPLACE VIEW build_stats AS
 SELECT b.id AS build_id,
