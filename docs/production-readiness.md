@@ -49,10 +49,13 @@ must not create an alternative production migration/build hook.
 
 Before the first owner-authorized publish:
 
-1. Use the final cleaned QA snapshot: eight games, five intended demo accounts,
-   ten original credited demo builds plus approved Construction Site. Keep
-   original sample likes, ratings and comments. No synthetic accounts/builds or
-   isolated test schemas should be copied.
+1. Review the current QA content immediately before publishing rather than
+   assuming the earlier eleven-build snapshot is still current. The post-merge
+   review found eight games, five intended accounts and eight builds: seven
+   original demos plus approved Construction Site. Three original demos were
+   already absent; do not recreate them by reseeding. Preserve any subsequent
+   genuine owner posts. No synthetic accounts/builds or isolated test schemas
+   should be copied.
 2. In Publishing, confirm a **separate production database** and select initial
    current development data. Review the proposed schema diff and data source.
    Never point production at the QA connection string or overwrite an existing
@@ -86,6 +89,24 @@ builds and seed samples are unchanged. It is never a deployment command.
 
 Tests now drop only their own uniquely generated schemas in teardown so future
 runs do not repopulate the release snapshot with retained fixtures.
+
+## Reconciled screenshot uploads
+
+The upload feature adds `image_uploads` metadata to QA using an explicit,
+additive and idempotent migration. It does not change existing builds, accounts
+or sessions. The production build/run commands above remain unchanged; the
+locked npm install includes the image decoder. Never run the QA upload
+migration CLI in production; Publishing manages the production schema.
+
+Keep the configured private App Storage access. Signed browser PUTs target
+staging only. Decoded, metadata-stripped images have separate finalized keys;
+only ready and consented images referenced by saved builds are public through
+the app. Unattached images are uploader-preview-only. Do not expose the whole
+bucket or store signed URLs in build records.
+
+See `image-uploads.md` for consent, limits, retry semantics and owner checks.
+Abandoned-object cleanup and unsaved drafts remain separate queued work,
+not release startup hooks.
 
 References consulted:
 - https://docs.replit.com/features/data-and-storage/development-and-production
