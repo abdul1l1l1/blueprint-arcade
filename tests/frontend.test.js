@@ -89,24 +89,43 @@ test('logged-in top bar exposes a working Logout button; anonymous top bar shows
     let destination;
     let logoutCalls = 0;
     const nodes = [];
+    const sidebarNodes = [];
     const topbar = { append: node => nodes.push(node) };
+    const sidebar = {
+      append: node => sidebarNodes.push(node),
+      querySelector: () => null,
+    };
     const document = {
       documentElement: { dataset: {} },
       addEventListener: (name, fn) => { ready = fn; },
-      querySelector: () => topbar,
+      querySelector: selector => selector === '.sidebar' ? sidebar : topbar,
       createElement: tag => ({
         tag, children: [], append(...children) { this.children.push(...children); },
         addEventListener(name, fn) { this[name] = fn; },
+        setAttribute(name, value) { (this.attributes ||= {})[name] = value; },
       }),
     };
+    const events = {};
     vm.runInNewContext(appCode, {
-      document, localStorage: { getItem: () => null },
+      document, location: { pathname: '/', assign: value => { destination = value; } },
       getMe: async () => ({ user }), logout: async () => { logoutCalls++; },
-      location: { assign: value => { destination = value; } }, setTimeout,
+      api: async path => path === '/api/notifications/unread-count' ? { unread_count: 3 } : {},
+      setTimeout,
     });
+    document.addEventListener = (name, fn) => {
+      if (name === 'DOMContentLoaded') ready = fn;
+      else events[name] = fn;
+    };
     await ready();
     const children = nodes[0].children;
+    assert.equal(sidebarNodes[0].href, '/about.html');
     if (user) {
+      const bell = children.find(node => node.href === '/notifications.html');
+      assert.ok(bell);
+      assert.equal(bell.attributes['aria-label'], 'Notifications, 3 unread');
+      assert.equal(bell.children[1].textContent, '3');
+      events['blueprint:notifications-read']();
+      assert.equal(bell.children[1].hidden, true);
       const button = children.find(node => node.tag === 'button');
       assert.equal(button.textContent, 'Logout');
       await button.click();
@@ -115,6 +134,7 @@ test('logged-in top bar exposes a working Logout button; anonymous top bar shows
     } else {
       assert.deepEqual(children.map(node => node.href), ['/login.html', '/register.html']);
       assert.equal(children.some(node => node.textContent === 'Logout'), false);
+      assert.equal(children.some(node => node.href === '/notifications.html'), false);
     }
   }
 });
