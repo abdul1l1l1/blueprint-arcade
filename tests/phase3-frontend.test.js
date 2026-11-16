@@ -64,9 +64,10 @@ test('approved demo covers have honest visible labels and accessible alt text wi
 
 test('P3 UI: only owners get controls; delete cancellation sends nothing; confirmed delete and pin refresh the view', async () => {
   const f = fixture();
-  for (const me of [null, { id: 'someone-else' }]) {
-    assert.equal(f.walk(f.ui.buildCard(f.build, { me })).some(node => node.tag === 'button'), false);
-  }
+  assert.equal(f.walk(f.ui.buildCard(f.build, { me: null })).some(node => node.tag === 'button'), false);
+  const otherControls = f.walk(f.ui.buildCard(f.build, { me: { id: 'someone-else' } }));
+  assert.ok(otherControls.some(node => node.textContent === 'Report'));
+  assert.equal(otherControls.some(node => ['Edit', 'Delete', 'Pin'].includes(node.textContent)), false);
   const nodes = f.walk(f.ui.buildCard(f.build, f.options));
   assert.ok(nodes.some(node => node.href === '/post.html?id=qa-build-id'));
   const remove = nodes.find(node => node.textContent === 'Delete');

@@ -12,6 +12,10 @@
   const buildsTab = document.getElementById('profile-builds-tab');
   const repostsTab = document.getElementById('profile-reposts-tab');
   const savedNotice = document.getElementById('saved-notice');
+  const profileActions = document.getElementById('profile-actions');
+  const avatarForm = document.getElementById('avatar-upload-form');
+  const buildsMore = document.getElementById('profile-build-more');
+  const repostsMore = document.getElementById('profile-reposts-more');
   const params = new URLSearchParams(location.search);
   const requestedUsername = params.get('username');
   const savedId = params.get('saved');
@@ -53,6 +57,34 @@
     return words.slice(0, 2).map((word) => word.charAt(0).toUpperCase()).join('') || 'B';
   }
 
+  function renderFollowAction(profile, isOwner) {
+    profileActions.replaceChildren();
+    if (!authChecked || !me || isOwner) return;
+    const button = BuildsUI.node('button', 'btn', profile.is_following ? 'Unfollow' : 'Follow');
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(Boolean(profile.is_following)));
+    const status = BuildsUI.node('span', 'follow-status');
+    status.setAttribute('role', 'status');
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      status.textContent = 'Saving…';
+      try {
+        const result = await api(`/api/follows/${encodeURIComponent(profile.username)}`, {
+          method: profile.is_following ? 'DELETE' : 'POST',
+        });
+        profile.is_following = result.following;
+        profile.follower_count = result.follower_count;
+        document.getElementById('profile-follower-count').textContent = String(result.follower_count);
+        button.textContent = result.following ? 'Unfollow' : 'Follow';
+        button.setAttribute('aria-pressed', String(result.following));
+        status.textContent = result.following ? 'Following this builder.' : 'No longer following this builder.';
+      } catch (error) {
+        status.textContent = BuildsUI.apiMessage(error, 'Follow update failed. Try again.');
+      } finally { button.disabled = false; }
+    });
+    profileActions.append(button, status);
+  }
+
   function renderProfile(data) {
     const profile = data.profile;
     const isOwner = authChecked && me && String(me.id) === String(profile.id);
@@ -66,6 +98,10 @@
     document.getElementById('profile-bio').hidden = !profile.bio;
     document.getElementById('profile-build-count').textContent = String(profile.build_count ?? (data.builds || []).length);
     document.getElementById('profile-pinned-count').textContent = String(profile.pinned_count ?? (data.builds || []).filter((build) => build.is_pinned).length);
+    document.getElementById('profile-follower-count').textContent = String(profile.follower_count || 0);
+    document.getElementById('profile-following-count').textContent = String(profile.following_count || 0);
+    renderFollowAction(profile, isOwner);
+    avatarForm.hidden = !isOwner;
     const avatar = document.getElementById('profile-avatar');
     avatar.replaceChildren();
     const avatarUrl = BuildsUI.safeImageUrl(profile.avatar_url || '');
@@ -83,7 +119,8 @@
     }
 
     const builds = Array.isArray(data.builds) ? data.builds : [];
-    document.getElementById('profile-build-label').textContent = `${builds.length} ${builds.length === 1 ? 'build' : 'builds'} shared`;
+    const totalBuilds = Number(profile.build_count) || 0;
+    document.getElementById('profile-build-label').textContent = `${totalBuilds} ${totalBuilds === 1 ? 'build' : 'builds'} shared`;
     buildsGrid.replaceChildren();
     if (!builds.length) {
       BuildsUI.statePanel(buildsState, 'No builds posted yet', 'When this builder shares a creation, it will appear here.');
@@ -94,8 +131,10 @@
         onRefresh: () => loadProfile()
       });
     }
+    buildsMore.hidden = !data.page?.builds?.has_more;
     const reposts = Array.isArray(data.reposts) ? data.reposts : [];
-    document.getElementById('profile-reposts-label').textContent = `${reposts.length} ${reposts.length === 1 ? 'repost' : 'reposts'}`;
+    const totalReposts = Number(profile.repost_count) || 0;
+    document.getElementById('profile-reposts-label').textContent = `${totalReposts} ${totalReposts === 1 ? 'repost' : 'reposts'}`;
     repostsGrid.replaceChildren();
     if (!reposts.length) {
       BuildsUI.statePanel(repostsState, 'No reposts yet', 'Builds this creator reposts will appear here.');
@@ -106,6 +145,7 @@
         onRefresh: () => loadProfile()
       });
     }
+    repostsMore.hidden = !data.page?.reposts?.has_more;
     selectTab('builds');
     content.hidden = false;
     state.replaceChildren();
@@ -137,6 +177,42 @@
           }
         });
       }
+    }
+  }
+
+  async function loadMore(kind) {
+    const isBuilds = kind === 'builds';
+    const grid = isBuilds ? buildsGrid : repostsGrid;
+    const sectionState = isBuilds ? buildsState : repostsState;
+    const button = isBuilds ? buildsMore : repostsMore;
+    const username = profileData?.profile?.username;
+    if (!username || button.disabled) return;
+    const offset = grid.querySelectorAll('[data-build-id]').length;
+    button.disabled = true;
+    button.textContent = 'Loading…';
+    try {
+      const result = await api(`/api/stats/profile/${encodeURIComponent(username)}?list=${kind}&offset=${offset}`);
+      if (!Array.isArray(result[kind]) || !result.page?.[kind]) throw new Error('The next profile page was incomplete.');
+      const cards = result[kind].map((build) => BuildsUI.buildCard(build, {
+        me: authChecked ? me : null,
+        onRefresh: () => loadProfile(),
+      }));
+      grid.append(...cards);
+      sectionState.replaceChildren();
+      button.hidden = !result.page[kind].has_more;
+      if (!grid.querySelector('[data-build-id]')) {
+        BuildsUI.statePanel(sectionState, isBuilds ? 'No builds posted yet' : 'No reposts yet',
+          isBuilds ? 'When this builder shares a creation, it will appear here.' : 'Builds this creator reposts will appear here.');
+      }
+    } catch (error) {
+      BuildsUI.statePanel(sectionState, 'More builds could not be loaded',
+        BuildsUI.apiMessage(error, 'Check your connection and try again.'), {
+          error: true,
+          retry: () => loadMore(kind),
+        });
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Load more';
     }
   }
 
@@ -188,8 +264,11 @@
   }
 
   document.addEventListener('DOMContentLoaded', start);
+  document.addEventListener('blueprint:avatar-updated', () => loadProfile());
   buildsTab.addEventListener('click', () => selectTab('builds'));
   repostsTab.addEventListener('click', () => selectTab('reposts'));
+  buildsMore.addEventListener('click', () => loadMore('builds'));
+  repostsMore.addEventListener('click', () => loadMore('reposts'));
   [buildsTab, repostsTab].forEach((tab) => tab.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();

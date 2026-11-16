@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Moderation — Blueprint Arcade</title>
+  <script src="/js/theme.js"></script>
+  <meta name="description" content="Review reported Blueprint Arcade builds and comments." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/builds.css" />
+</head>
+<body>
+  <div class="layout builds-layout">
+    <aside class="sidebar">
+      <h4>Discover</h4><a href="/">Builds</a><a href="/top10.html">Top 10</a>
+      <h4>Games</h4><a href="/games.html">Directory</a><a href="/compare.html">Compare</a>
+      <h4>Builds</h4><a href="/post.html">Post a Build</a>
+      <h4>Community</h4><a href="/profile.html">My Profile</a><a href="/settings.html">Settings</a>
+    </aside>
+    <div class="main">
+      <header class="topbar"><a class="btn" href="/">Showcase</a><a class="btn" href="/favorites.html">Favorites</a><a class="btn" href="/profile.html">My Profile</a><button class="btn" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button></header>
+      <main class="builds-page">
+        <p class="builds-eyebrow">Community safety</p>
+        <h1>Moderation</h1>
+        <p class="builds-lede">Review reports from logged-in community members. Reported content stays visible while it is reviewed.</p>
+        <div id="moderation-state" class="build-state" role="status" aria-live="polite"></div>
+        <section id="moderation-list" class="moderation-list" aria-label="Reported content" hidden></section>
+      </main>
+    </div>
+  </div>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/builds-ui.js"></script>
+  <script src="/js/moderation.js"></script>
+</body>
+</html>

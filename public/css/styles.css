@@ -42,7 +42,7 @@ a:hover { color: var(--ink); }
 .sidebar a { display: block; min-height: 40px; padding: 9px 10px; border-radius: 7px; color: var(--ink); font-weight: 550; text-decoration: none; }
 .sidebar a:hover, .sidebar a.active { background: rgba(137, 207, 240, .18); color: var(--ink); }
 .main { flex: 1; min-width: 0; }
-.topbar { position: sticky; z-index: 10; top: 0; display: flex; min-height: 60px; align-items: center; justify-content: flex-end; gap: 9px; padding: 9px 24px; border-bottom: 1px solid var(--border); background: var(--card); }
+.topbar { position: sticky; z-index: 10; top: 0; display: flex; min-height: 60px; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 9px; padding: 9px 24px; border-bottom: 1px solid var(--border); background: var(--card); }
 .auth-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .auth-actions > span { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
 .notification-link { position: relative; min-width: 42px; gap: 7px; padding: 8px 10px; }

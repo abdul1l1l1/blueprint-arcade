@@ -146,7 +146,9 @@ function createSocialRouter(database = pool) {
   router.get('/builds/:id/comments', async (req, res, next) => {
     try {
       const { rows } = await database.query(
-        `SELECT c.id,c.body,c.created_at,u.username FROM comments c JOIN users u ON u.id=c.user_id
+        `SELECT c.id,c.user_id,c.body,c.created_at,u.username,p.display_name,p.avatar_url
+         FROM comments c JOIN users u ON u.id=c.user_id
+         LEFT JOIN profiles p ON p.user_id=u.id
          WHERE c.build_id=$1 ORDER BY c.created_at DESC,c.id DESC`, [req.params.id]);
       res.json({ comments: rows });
     } catch (error) { next(error); }
@@ -171,8 +173,9 @@ function createSocialRouter(database = pool) {
           INSERT INTO comments(build_id,user_id,body) VALUES($1,$2,$3)
           RETURNING id,body,created_at,user_id
          )
-         SELECT a.id,a.body,a.created_at,u.username
-         FROM added a JOIN users u ON u.id=a.user_id`,
+         SELECT a.id,a.user_id,a.body,a.created_at,u.username,p.display_name,p.avatar_url
+         FROM added a JOIN users u ON u.id=a.user_id
+         LEFT JOIN profiles p ON p.user_id=u.id`,
         [req.params.id, req.session.userId, body.trim()]);
       await recordBuildNotification(client, {
         recipientId: build.owner_id,

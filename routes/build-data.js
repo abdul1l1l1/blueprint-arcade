@@ -5,6 +5,7 @@ const { uploadId } = require('../public/js/upload-path');
 const buildSelect = `SELECT b.id, b.owner_id, b.game_id, b.title, b.description,
   b.image_urls, b.budget_tier, b.build_type, b.is_pinned, b.created_at, b.updated_at,
   g.name AS game_name, g.slug AS game_slug, u.username AS owner, p.display_name,
+  p.avatar_url AS owner_avatar_url,
   COALESCE(bs.avg_rating,0)::float8 AS avg_rating,
   COALESCE(bs.like_count,0)::int AS like_count,
   ARRAY(SELECT bt.tag FROM build_tags bt WHERE bt.build_id=b.id ORDER BY bt.tag) AS tags

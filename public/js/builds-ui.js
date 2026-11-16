@@ -69,14 +69,85 @@
     return '';
   }
 
+  function userAvatar(url, name, small = false) {
+    const avatar = node('span', `user-avatar${small ? ' user-avatar--small' : ''}`);
+    avatar.setAttribute('aria-hidden', 'true');
+    const imageUrl = safeImageUrl(url);
+    if (imageUrl) {
+      const image = document.createElement('img');
+      image.src = imageUrl;
+      image.alt = '';
+      image.loading = 'lazy';
+      avatar.append(image);
+    } else {
+      avatar.textContent = String(name || '?').trim().charAt(0).toUpperCase() || '?';
+    }
+    return avatar;
+  }
+
+  function reportControl(targetType, targetId, options = {}) {
+    const me = options.me;
+    if (!me || String(me.id) === String(options.ownerId)) return null;
+    const control = node('div', 'report-control');
+    const toggle = node('button', 'btn report-toggle', 'Report');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    const form = node('form', 'report-form');
+    form.hidden = true;
+    const label = node('label', '', 'Why are you reporting this?');
+    const reason = document.createElement('textarea');
+    reason.name = 'reason';
+    reason.required = true;
+    reason.maxLength = 500;
+    reason.rows = 2;
+    reason.setAttribute('aria-label', 'Reason for report');
+    const submit = node('button', 'btn', 'Submit report');
+    submit.type = 'submit';
+    const status = node('p', 'report-status');
+    status.setAttribute('role', 'status');
+    label.append(reason);
+    form.append(label, submit, status);
+    toggle.addEventListener('click', () => {
+      form.hidden = !form.hidden;
+      toggle.setAttribute('aria-expanded', String(!form.hidden));
+      if (!form.hidden) reason.focus();
+    });
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const value = reason.value.trim();
+      if (!value || value.length > 500) {
+        status.textContent = 'Enter a reason of 1–500 characters.';
+        return;
+      }
+      submit.disabled = true;
+      status.textContent = 'Submitting report…';
+      try {
+        await api(`/api/reports/${targetType}/${encodeURIComponent(targetId)}`, {
+          method: 'POST',
+          body: { reason: value },
+        });
+        status.textContent = 'Report submitted. This content remains visible.';
+        toggle.textContent = 'Reported';
+        toggle.disabled = true;
+        form.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+      } catch (error) {
+        status.textContent = apiMessage(error, 'Report could not be submitted. Try again.');
+      } finally { submit.disabled = false; }
+    });
+    control.append(toggle, form);
+    return control;
+  }
+
   function buildCard(build, options = {}) {
     const article = node('article', 'card build-tile');
     article.dataset.buildId = String(build.id);
     article.__baBuild = build;
+    article.__baMe = options.me || null;
     const detailHref = `/build.html?id=${encodeURIComponent(build.id)}`;
     article.classList.add('is-detail-clickable');
     article.addEventListener('click', (event) => {
-      if (event.target.closest('a,button,input,textarea,select,summary,details,.social-tools')) return;
+      if (event.target.closest('a,button,input,textarea,select,summary,details,.social-tools,.report-control')) return;
       window.location.assign(detailHref);
     });
     const cover = node('div', 'build-cover');
@@ -126,6 +197,7 @@
     const username = typeof build.owner === 'string' ? build.owner : build.owner?.username;
     const ownerLink = node('a', '', build.display_name || username || 'Community builder');
     ownerLink.href = `/profile.html?username=${encodeURIComponent(username || '')}`;
+    credit.append(userAvatar(build.owner_avatar_url, build.display_name || username, true));
     credit.append(document.createTextNode('by '), ownerLink, document.createTextNode(' · '));
     const gameLink = node('a', 'game-link', build.game_name || 'Unknown game');
     gameLink.href = build.game_slug ? `/game.html?slug=${encodeURIComponent(build.game_slug)}` : '/games.html';
@@ -152,6 +224,9 @@
       });
       body.append(tagList);
     }
+
+    const report = reportControl('builds', build.id, { me: options.me, ownerId: build.owner_id });
+    if (report) body.append(report);
 
     if (options.me && String(options.me.id) === String(build.owner_id)) {
       const actions = node('div', 'build-tile-actions');
@@ -203,10 +278,12 @@
     apiMessage,
     buildCard,
     node,
+    reportControl,
     renderCards,
     safeImageUrl,
     setError,
     statePanel,
-    tagName
+    tagName,
+    userAvatar
   };
 })();

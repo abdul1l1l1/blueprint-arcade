@@ -133,6 +133,8 @@
       repost.type = 'button';
       repost.setAttribute('aria-label', 'Repost this build');
       actions.append(like, ratingLabel, rating, favorite, share, repost, counts);
+      const report = BuildsUI.reportControl('builds', buildId, { me: currentUser, ownerId: build.owner_id });
+      if (report) actions.append(report);
     } else {
       actions.append(like, favorite, ratingLabel, rating, commentsToggle, counts);
     }
@@ -292,9 +294,14 @@
       }
       items.forEach((comment) => {
         const item = node('article', 'comment-item');
-        const author = node('strong', '', comment.username || 'Community member');
+        const author = node('strong', '', comment.display_name || comment.username || 'Community member');
         const body = node('p', '', comment.body || '');
-        item.append(author, body);
+        item.append(BuildsUI.userAvatar(comment.avatar_url, author.textContent, true), author, body);
+        const report = BuildsUI.reportControl('comments', comment.id, {
+          me: currentUser,
+          ownerId: comment.user_id,
+        });
+        if (report) item.append(report);
         list.append(item);
       });
     }
