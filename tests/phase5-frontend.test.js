@@ -66,6 +66,9 @@ test('P5 all sixteen pages load theme before styles/content, expose required top
     assert.match(html, /data-theme-toggle/, page);
     assert.match(html, /href="\/favorites.html"/, page);
     assert.match(html, /href="\/post.html"/, page);
+    assert.doesNotMatch(html, /class="btn btn-primary" href="\/post.html">Post a Build<\/a>/, page);
+    const sidebar = html.match(/<aside class="sidebar"[\s\S]*?<\/aside>/);
+    if (sidebar) assert.match(sidebar[0], /href="\/post.html"/, page);
     assert.match(html, /name="viewport"/, page);
     assert.doesNotMatch(html, /onclick="toggleTheme/, page);
     assert.doesNotMatch(html, /\p{Extended_Pictographic}/u, page);
