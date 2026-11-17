@@ -159,6 +159,19 @@ Its fixed public application route serves only the approved App Storage image.
 
 Run `npm test` for all phase regressions and Phase 5 checks. Fixture schemas
 are now removed by teardown; no test suite changes public seed data.
+
+### Builder screenshot uploads
+
+The build form can upload JPEG, PNG and WebP screenshots directly to App
+Storage using the existing login session. Consent, file validation, owner-only
+attachment and save-before-public visibility are required. Existing image URLs
+and approved fixed assets still work.
+
+For an existing QA database, use the additive `npm run db:migrate:uploads`;
+never seed/reset existing content to enable uploads. Fresh QA initialization
+includes that schema. See `docs/image-uploads.md` for limits, access rules and
+retry behavior. Production schema changes remain part of the approved Replit
+Publishing flow, never a startup or production migration command.
 `node db/clean-qa.js` previews the owner-requested synthetic-data cleanup;
 `--apply` is destructive, QA-only and refuses unknown accounts/content.
 See `docs/phase-5-acceptance.md`, `docs/phase-5-qa-report.md` and

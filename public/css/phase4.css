@@ -41,10 +41,11 @@
 .comment-panel { padding: 14px; border-radius: 8px; background: rgba(137, 207, 240, .1); }
 .comment-panel h4 { margin: 0 0 10px; font-size: 14px; }
 .comment-list { display: grid; gap: 10px; margin: 0 0 12px; }
-.comment-item { padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+.comment-item { display: grid; grid-template-columns: 28px minmax(0,1fr); align-items: start; gap: 4px 9px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
 .comment-item:last-child { padding-bottom: 0; border-bottom: 0; }
 .comment-item strong { font-size: 12px; }
-.comment-item p { margin: 3px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.comment-item p { grid-column: 2; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.comment-item .report-control { grid-column: 2; margin-top: 0; }
 .comment-form { display: grid; gap: 8px; }
 .comment-form textarea { min-height: 76px; resize: vertical; }
 .comment-form button { justify-self: start; }

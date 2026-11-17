@@ -1,32 +1,121 @@
 const express = require('express');
+const { randomUUID } = require('node:crypto');
 const { pool } = require('../db/pool');
+const { validId, failure } = require('./build-data');
+const { maxBytes, types, imagePath, uploadId } = require('../public/js/upload-path');
 const imageStorage = require('../db/image-storage');
-
-const UUID_IMAGE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.webp$/;
 
 function createUploadsRouter(database = pool, storage = imageStorage) {
   const router = express.Router();
-  router.use((req, res, next) => {
-    res.set('Cache-Control', 'private, no-store');
+  router.use((req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
+
+  function authenticated(req, res, next) {
+    if (!req.session.userId) return res.status(401).json({ errors: { image: 'Log in before uploading images.' } });
+    if (!req.is('application/json') || req.get('Sec-Fetch-Site') === 'cross-site') {
+      return res.status(403).json({ errors: { image: 'Upload from this site using the build form.' } });
+    }
     next();
+  }
+
+  router.post('/api/uploads/request-url', authenticated, async (req, res, next) => {
+    const { size, contentType, publicConsent } = req.body || {};
+    if (publicConsent !== true) return res.status(400).json({ errors: { image: 'Confirm that you may share this image publicly.' } });
+    if (!Number.isInteger(size) || size < 1 || size > maxBytes || !types.includes(contentType)) {
+      return res.status(400).json({ errors: { image: 'Use a JPEG, PNG or WebP image no larger than 8 MB.' } });
+    }
+    let client;
+    try {
+      const prefix = storage.privatePrefix();
+      const id = randomUUID();
+      const stagingKey = `${prefix}/build-upload-staging/${id}`;
+      const objectKey = `${prefix}/build-images/${id}.webp`;
+      client = await database.connect();
+      await client.query('BEGIN');
+      const owner = await client.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [req.session.userId]);
+      if (!owner.rows.length) throw failure(401, { image: 'Please log in again.' });
+      const count = await client.query(
+        `SELECT count(*)::int AS n FROM image_uploads
+         WHERE owner_id=$1 AND created_at > now() - interval '1 hour'`,
+        [req.session.userId],
+      );
+      if (count.rows[0].n >= 30) throw failure(429, { image: 'Upload limit reached. Please try again in an hour.' });
+      const uploadURL = await storage.signUpload(stagingKey);
+      await client.query(
+        `INSERT INTO image_uploads
+         (id,owner_id,staging_key,object_key,expected_size,content_type,public_consent)
+         VALUES ($1,$2,$3,$4,$5,$6,true)`,
+        [id, req.session.userId, stagingKey, objectKey, size, contentType],
+      );
+      await client.query('COMMIT');
+      res.status(201).json({ id, uploadURL });
+    } catch (error) {
+      await client?.query('ROLLBACK').catch(() => {});
+      if (error.errors) return res.status(error.status).json({ errors: error.errors });
+      next(error);
+    } finally { client?.release(); }
   });
 
-  router.get('/media/uploads/:filename', async (req, res, next) => {
-    const match = UUID_IMAGE.exec(req.params.filename);
-    if (!match) return res.status(404).json({ errors: { image: 'Image not found.' } });
+  router.post('/api/uploads/:id/complete', authenticated, async (req, res, next) => {
+    if (!validId(req.params.id)) return res.status(400).json({ errors: { image: 'Invalid upload ID.' } });
+    let client;
+    try {
+      client = await database.connect();
+      await client.query('BEGIN');
+      const { rows: [row] } = await client.query(
+        'SELECT * FROM image_uploads WHERE id=$1 FOR UPDATE',
+        [req.params.id],
+      );
+      if (!row) throw failure(404, { image: 'Upload not found.' });
+      if (row.owner_id !== req.session.userId) throw failure(403, { image: 'Only the uploader can finish this upload.' });
+      if (!row.ready) {
+        if (Date.now() - new Date(row.created_at).getTime() > 15 * 60 * 1000) {
+          throw failure(410, { image: 'Upload expired. Choose the file and retry.' });
+        }
+        await storage.finalize(row);
+        await client.query('UPDATE image_uploads SET ready=true WHERE id=$1', [row.id]);
+      }
+      await client.query('COMMIT');
+      res.json({ imageUrl: imagePath(row.id) });
+    } catch (error) {
+      await client?.query('ROLLBACK').catch(() => {});
+      if (error.imageValidation) return res.status(400).json({ errors: { image: error.message } });
+      if (error.errors) return res.status(error.status).json({ errors: error.errors });
+      next(error);
+    } finally { client?.release(); }
+  });
 
-    const imageUrl = `/media/uploads/${match[1]}.webp`;
+  router.post('/api/profile/avatar', authenticated, async (req, res, next) => {
+    const id = uploadId(req.body?.imageUrl);
+    if (!id) return res.status(400).json({ errors: { avatar: 'Choose a completed upload.' } });
+    try {
+      const imageUrl = imagePath(id);
+      const result = await database.query(
+        `UPDATE profiles p SET avatar_url=$1
+         FROM image_uploads i
+         WHERE p.user_id=$2 AND i.id=$3 AND i.owner_id=$2 AND i.ready AND i.public_consent`,
+        [imageUrl, req.session.userId, id],
+      );
+      if (!result.rowCount) {
+        return res.status(403).json({ errors: { avatar: 'Only your own completed upload can be used as an avatar.' } });
+      }
+      res.json({ avatar_url: imageUrl });
+    } catch (error) { next(error); }
+  });
+
+  // Public only after a build or profile references this validated image.
+  router.get('/media/uploads/:filename', async (req, res) => {
+    const id = uploadId(`/media/uploads/${req.params.filename}`);
+    if (!id) return res.status(404).json({ errors: { image: 'Image not found.' } });
     try {
       const { rows: [row] } = await database.query(
-        `SELECT i.object_key
-         FROM image_uploads i
+        `SELECT i.* FROM image_uploads i
          WHERE i.id=$1 AND i.ready AND i.public_consent
            AND (
-             i.owner_id=$2 OR EXISTS (
-               SELECT 1 FROM builds b WHERE $3=ANY(b.image_urls)
-             )
+             i.owner_id=$2
+             OR EXISTS (SELECT 1 FROM builds b WHERE $3=ANY(b.image_urls))
+             OR EXISTS (SELECT 1 FROM profiles p WHERE p.avatar_url=$3)
            )`,
-        [match[1], req.session?.userId || null, imageUrl],
+        [id, req.session?.userId || null, imagePath(id)],
       );
       if (!row) return res.status(404).json({ errors: { image: 'Image not found.' } });
       storage.serve(row, res);

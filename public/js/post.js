@@ -20,6 +20,15 @@
   let tagRequestId = 0;
   let tagLoadError = '';
   let requestPending = false;
+  let uploading = false;
+  const uploads = BAPostUploads({
+    form,
+    onBusy(busy) {
+      uploading = busy;
+      setFormDisabled(busy);
+    },
+    onError(message) { BuildsUI.setError(errorBox, message); },
+  });
 
   function addSignInLink(message) {
     state.replaceChildren();
@@ -102,7 +111,7 @@
   }
 
   function refreshSubmitState() {
-    submitButton.disabled = !setupComplete || loadingTags || Boolean(tagLoadError) || requestPending || !me;
+    submitButton.disabled = !setupComplete || loadingTags || Boolean(tagLoadError) || requestPending || uploading || !me;
   }
 
   function setFormDisabled(disabled) {
@@ -110,6 +119,7 @@
       if (control !== submitButton) control.disabled = disabled;
     });
     refreshSubmitState();
+    uploads.refresh(disabled || !setupComplete || !me);
   }
 
   function clearMessages() {
@@ -138,7 +148,8 @@
     const imageUrls = validateImages(form.elements.image_urls.value);
     if (!form.elements.title.value.trim()) return { error: 'Add a title before posting.', field: 'title' };
     if (!gameSelect.value) return { error: 'Choose a game for this build.', field: 'game_id' };
-    if (imageUrls === null) return { error: 'Use full HTTP(S) image URLs without credentials, or an approved local image path.', field: 'image_urls' };
+    if (imageUrls === null) return { error: 'Use full HTTP(S) image URLs without credentials, or a completed upload path.', field: 'image_urls' };
+    if (uploads.hasPending()) return { error: 'Upload your selected files first, or clear the file selection to post without them.', field: 'image_files' };
     const tags = [...new Set(selectedTagValues())];
     return {
       payload: {
@@ -159,6 +170,7 @@
     gameSelect.value = String(build.game_id || '');
     form.elements.description.value = build.description || '';
     form.elements.image_urls.value = Array.isArray(build.image_urls) ? build.image_urls.join('\n') : '';
+    uploads.render();
     form.elements.budget_tier.value = build.budget_tier || 'starter';
     form.elements.build_type.value = build.build_type || 'freeform';
     form.elements.is_pinned.checked = Boolean(build.is_pinned);
@@ -230,7 +242,7 @@
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     clearMessages();
-    if (!setupComplete || loadingTags || tagLoadError || requestPending || !me) return;
+    if (!setupComplete || loadingTags || tagLoadError || requestPending || uploading || !me) return;
     const result = buildPayload();
     if (result.error) {
       BuildsUI.setError(errorBox, result.error);

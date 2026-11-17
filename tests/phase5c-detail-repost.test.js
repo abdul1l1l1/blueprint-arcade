@@ -161,8 +161,15 @@ test('5C repost feed and profile reference the original build in repost order', 
     [original.id, second.id, actorId],
   );
 
-  const feed = await request('/api/builds?sort=newest');
-  const feedItems = feed.data.builds.filter(item => item.id === original.id && item.is_repost);
+  const feedItems = [];
+  let offset = 0;
+  let page;
+  do {
+    page = await request(`/api/builds?sort=newest&offset=${offset}`);
+    assert.equal(page.status, 200);
+    feedItems.push(...page.data.builds.filter(item => item.id === original.id && item.is_repost));
+    offset = page.data.page.next_offset ?? offset + page.data.builds.length;
+  } while (page.data.page.has_more);
   assert.equal(feedItems.length, 2);
   assert.deepEqual(new Set(feedItems.map(item => item.reposted_by)), new Set(['P5CDetailReposter', 'P5CDetailAnother']));
   assert.ok(feedItems.every(item => item.owner === 'P5CDetailOwner'));

@@ -28,6 +28,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       auth.append(login, register);
       return;
     }
+    if (user.role === 'admin' && sidebar && !sidebar.querySelector('a[href="/moderation.html"]')) {
+      const moderation = document.createElement('a');
+      moderation.href = '/moderation.html';
+      moderation.textContent = 'Moderation';
+      sidebar.append(moderation);
+    }
     const notificationLink = document.createElement('a');
     notificationLink.className = 'btn notification-link';
     notificationLink.href = '/notifications.html';

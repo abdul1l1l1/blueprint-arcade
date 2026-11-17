@@ -2,11 +2,20 @@
 const express = require('express');
 const { pool } = require('../db/pool');
 const { buildSelect, repostSelect, types, budgets, validId, failure, validateBuild } = require('./build-data');
+const PAGE_SIZE = 12;
 const sorts = Object.freeze({
-  newest: 'b.created_at DESC, b.id',
-  rating: 'avg_rating DESC, b.created_at DESC, b.id',
-  likes: 'like_count DESC, b.created_at DESC, b.id',
+  newest: 'COALESCE(reposted_at, created_at) DESC, id ASC, reposted_by_id ASC NULLS FIRST',
+  rating: 'avg_rating DESC, COALESCE(reposted_at, created_at) DESC, id ASC, reposted_by_id ASC NULLS FIRST',
+  likes: 'like_count DESC, COALESCE(reposted_at, created_at) DESC, id ASC, reposted_by_id ASC NULLS FIRST',
 });
+const originalFeedSelect = buildSelect.replace(
+  'SELECT b.id,',
+  'SELECT b.id, false AS is_repost, NULL::uuid AS reposted_by_id, NULL::text AS reposted_by, NULL::text AS reposted_display_name, NULL::timestamptz AS reposted_at,',
+);
+const repostFeedSelect = repostSelect.replace(
+  'SELECT r.user_id AS reposted_by_id, ru.username AS reposted_by, rp.display_name AS reposted_display_name, r.created_at AS reposted_at, b.id,',
+  'SELECT b.id, true AS is_repost, r.user_id AS reposted_by_id, ru.username AS reposted_by, rp.display_name AS reposted_display_name, r.created_at AS reposted_at,',
+);
 function requireLogin(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ errors: { _general: 'You must be logged in.' } });
   next();
@@ -15,16 +24,24 @@ function createBuildsRouter(database = pool) {
   const router = express.Router();
   router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
   router.get('/', async (req, res, next) => {
-    const { q = '', game = '', build_type = '', budget_tier = '', tag = '', sort = 'newest' } = req.query;
+    const { q = '', game = '', build_type = '', budget_tier = '', tag = '', sort = 'newest', following = '', offset = '0' } = req.query;
     const errors = {};
-    for (const [key, value] of Object.entries({ q, game, build_type, budget_tier, tag, sort })) {
+    for (const [key, value] of Object.entries({ q, game, build_type, budget_tier, tag, sort, following, offset })) {
       if (typeof value !== 'string' || value.includes('\0')) errors[key] = 'Choose a single valid value.';
     }
     if (typeof q === 'string' && q.trim().length > 120) errors.q = 'Search must be at most 120 characters.';
     if (build_type && !types.includes(build_type)) errors.build_type = 'Choose a valid build type.';
     if (budget_tier && !budgets.includes(budget_tier)) errors.budget_tier = 'Choose a valid budget tier.';
     if (typeof sort !== 'string' || !Object.hasOwn(sorts, sort)) errors.sort = 'Choose newest, rating, or likes.';
+    if (following && following !== '1') errors.following = 'Choose whether to show everyone or followed builders.';
+    if (!/^\d+$/.test(String(offset)) || !Number.isSafeInteger(Number(offset))
+      || Number(offset) > 100000 || Number(offset) % PAGE_SIZE !== 0) {
+      errors.offset = 'Choose a valid results page.';
+    }
     if (Object.keys(errors).length) return res.status(400).json({ errors });
+    if (following === '1' && !req.session.userId) {
+      return res.status(401).json({ errors: { following: 'Log in to see builds from people you follow.' } });
+    }
     try {
       const values = [];
       const where = [];
@@ -34,28 +51,26 @@ function createBuildsRouter(database = pool) {
       if (build_type) add('b.build_type=?', build_type);
       if (budget_tier) add('b.budget_tier=?', budget_tier);
       if (tag) add('EXISTS (SELECT 1 FROM build_tags bt WHERE bt.build_id=b.id AND bt.tag=?)', tag);
+      if (following === '1') add('EXISTS (SELECT 1 FROM follows f WHERE f.follower_id=? AND f.followed_id=b.owner_id)', req.session.userId);
       const filter = where.length ? `WHERE ${where.join(' AND ')}` : '';
-      const [originals, reposts] = await Promise.all([
-        database.query(`${buildSelect} ${filter}`, values),
-        database.query(`${repostSelect} ${filter}`, values),
-      ]);
-      const rows = [
-        ...originals.rows.map(build => ({ ...build, is_repost: false })),
-        ...reposts.rows.map(build => ({ ...build, is_repost: true })),
-      ];
-      const activityTime = build => new Date(build.reposted_at || build.created_at).getTime() || 0;
-      rows.sort((a, b) => {
-        if (sort === 'rating' && Number(b.avg_rating) !== Number(a.avg_rating)) {
-          return Number(b.avg_rating) - Number(a.avg_rating);
-        }
-        if (sort === 'likes' && Number(b.like_count) !== Number(a.like_count)) {
-          return Number(b.like_count) - Number(a.like_count);
-        }
-        return activityTime(b) - activityTime(a)
-          || String(a.id).localeCompare(String(b.id))
-          || String(a.reposted_by_id || '').localeCompare(String(b.reposted_by_id || ''));
+      const queryValues = [...values, PAGE_SIZE + 1, Number(offset)];
+      const limitIndex = values.length + 1;
+      const offsetIndex = values.length + 2;
+      const { rows } = await database.query(
+        `SELECT * FROM (
+           ${originalFeedSelect} ${filter}
+           UNION ALL
+           ${repostFeedSelect} ${filter}
+         ) feed
+         ORDER BY ${sorts[sort]}
+         LIMIT $${limitIndex} OFFSET $${offsetIndex}`,
+        queryValues,
+      );
+      const hasMore = rows.length > PAGE_SIZE;
+      res.json({
+        builds: rows.slice(0, PAGE_SIZE),
+        page: { offset: Number(offset), has_more: hasMore, next_offset: hasMore ? Number(offset) + PAGE_SIZE : null },
       });
-      res.json({ builds: rows });
     } catch (err) { next(err); }
   });
   router.get('/:id', async (req, res, next) => {

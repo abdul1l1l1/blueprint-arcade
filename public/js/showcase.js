@@ -4,16 +4,20 @@
   const form = document.getElementById('build-filters');
   const gameSelect = document.getElementById('filter-game');
   const tagSelect = document.getElementById('filter-tag');
+  const followingSelect = document.getElementById('filter-following');
+  const followingHint = document.getElementById('following-filter-hint');
   const sortSelect = document.getElementById('filter-sort');
   const state = document.getElementById('showcase-state');
   const grid = document.getElementById('showcase');
   const count = document.getElementById('results-count');
+  const loadMoreButton = document.getElementById('showcase-load-more');
   let me = null;
   let meLoaded = false;
   let games = [];
   let allTags = [];
   let requestNumber = 0;
   let gamesWarning = '';
+  let nextOffset = 0;
 
   function currentFilters() {
     return {
@@ -22,6 +26,7 @@
       build_type: form.elements.build_type.value,
       budget_tier: form.elements.budget_tier.value,
       tag: tagSelect.value,
+      following: followingSelect.value,
       sort: sortSelect.value || 'newest'
     };
   }
@@ -73,6 +78,7 @@
     gameSelect.value = params.get('game') || '';
     form.elements.build_type.value = params.get('build_type') || '';
     form.elements.budget_tier.value = params.get('budget_tier') || '';
+      followingSelect.value = params.get('following') || '';
     sortSelect.value = ['newest', 'rating', 'likes'].includes(params.get('sort')) ? params.get('sort') : 'newest';
     updateTagOptions(params.get('tag') || '');
   }
@@ -80,29 +86,48 @@
   function showSkeletons() {
     state.replaceChildren();
     grid.replaceChildren();
+    loadMoreButton.hidden = true;
     count.textContent = 'Loading builds…';
     for (let i = 0; i < 6; i += 1) grid.append(BuildsUI.node('div', 'build-skeleton'));
   }
 
-  async function loadBuilds(filters = currentFilters()) {
+  async function loadBuilds(filters = currentFilters(), append = false) {
     const requestId = ++requestNumber;
     updateUrl(filters);
-    showSkeletons();
+    if (append) {
+      loadMoreButton.disabled = true;
+      loadMoreButton.textContent = 'Loading…';
+    } else {
+      showSkeletons();
+      nextOffset = 0;
+    }
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); });
+    params.set('offset', String(append ? nextOffset : 0));
     try {
       const result = await api(`/api/builds?${params.toString()}`);
       if (requestId !== requestNumber) return;
-      if (!Array.isArray(result.builds)) throw new Error('Incomplete build response.');
+      if (!Array.isArray(result.builds) || !result.page) throw new Error('Incomplete build response.');
       const builds = result.builds;
-      grid.replaceChildren();
-      if (!builds.length) {
+      if (!append) grid.replaceChildren();
+      if (!builds.length && !append) {
         count.textContent = '0 builds';
         BuildsUI.statePanel(state, 'No builds match those filters', 'Try a different search or clear one of the selected filters.');
+        loadMoreButton.hidden = true;
       } else {
         state.replaceChildren();
-        count.textContent = `${builds.length} ${builds.length === 1 ? 'build' : 'builds'}`;
-        BuildsUI.renderCards(grid, builds, { me, onRefresh: () => loadBuilds(currentFilters()) });
+        if (append) {
+          grid.append(...builds.map((build) => BuildsUI.buildCard(build, {
+            me,
+            onRefresh: () => loadBuilds(currentFilters()),
+          })));
+        } else {
+          BuildsUI.renderCards(grid, builds, { me, onRefresh: () => loadBuilds(currentFilters()) });
+        }
+        const shown = grid.querySelectorAll('[data-build-id]').length;
+        count.textContent = `${shown} ${shown === 1 ? 'build' : 'builds'} loaded`;
+        nextOffset = result.page.next_offset ?? (Number(result.page.offset) + builds.length);
+        loadMoreButton.hidden = !result.page.has_more;
       }
       if (gamesWarning) {
         const notice = BuildsUI.node('p', 'field-hint', gamesWarning);
@@ -121,12 +146,16 @@
       }
     } catch (error) {
       if (requestId !== requestNumber) return;
-      grid.replaceChildren();
+      if (!append) grid.replaceChildren();
       count.textContent = '';
-      BuildsUI.statePanel(state, 'Builds could not be loaded', BuildsUI.apiMessage(error, 'Check your connection and try again.'), {
+      BuildsUI.statePanel(state, append ? 'More builds could not be loaded' : 'Builds could not be loaded',
+        BuildsUI.apiMessage(error, 'Check your connection and try again.'), {
         error: true,
-        retry: () => loadBuilds(currentFilters())
+        retry: () => loadBuilds(currentFilters(), append)
       });
+    } finally {
+      loadMoreButton.disabled = false;
+      loadMoreButton.textContent = 'Load more';
     }
   }
 
@@ -136,8 +165,12 @@
       const meResult = await getMe();
       me = meResult.user || null;
       meLoaded = true;
+      followingSelect.disabled = !me;
+      followingHint.hidden = Boolean(me);
     } catch {
       meLoaded = false;
+      followingSelect.disabled = true;
+      followingHint.hidden = false;
     }
     try {
       await loadGames();
@@ -158,6 +191,7 @@
       form.elements.q.value = params.get('q') || '';
       form.elements.build_type.value = params.get('build_type') || '';
       form.elements.budget_tier.value = params.get('budget_tier') || '';
+      followingSelect.value = params.get('following') || '';
       sortSelect.value = ['newest', 'rating', 'likes'].includes(params.get('sort')) ? params.get('sort') : 'newest';
     }
     await loadBuilds(currentFilters());
@@ -175,7 +209,9 @@
     form.elements.budget_tier.value = '';
     sortSelect.value = 'newest';
     tagSelect.value = '';
+    followingSelect.value = '';
     loadBuilds(currentFilters());
   });
+  loadMoreButton.addEventListener('click', () => loadBuilds(currentFilters(), true));
   document.addEventListener('DOMContentLoaded', start);
 })();

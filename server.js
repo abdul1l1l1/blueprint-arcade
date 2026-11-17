@@ -40,6 +40,8 @@ function createApp({ database = pool, store, env = process.env, storage = imageS
   app.use('/api/social', require('./routes/social').createSocialRouter(database));
   app.use('/api/notifications', require('./routes/notifications').createNotificationsRouter(database));
   app.use('/api/stats', require('./routes/stats').createStatsRouter(database));
+  app.use('/api/follows', require('./routes/follows').createFollowsRouter(database));
+  app.use('/api/reports', require('./routes/reports').createReportsRouter(database));
   app.use(require('./routes/uploads').createUploadsRouter(database, storage));
   app.use(require('./routes/approved-assets').createApprovedAssetsRouter());
   app.use('/api', (req, res) => res.status(404).json({ errors: { _general: 'API endpoint not found.' } }));

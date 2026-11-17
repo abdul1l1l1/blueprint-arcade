@@ -13,6 +13,15 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_ci ON users (lower(username));
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_ci ON users (lower(email));
 
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  followed_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (follower_id, followed_id),
+  CHECK (follower_id <> followed_id)
+);
+CREATE INDEX IF NOT EXISTS idx_follows_followed ON follows(followed_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id          BIGSERIAL PRIMARY KEY,
   user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -120,6 +129,23 @@ CREATE TABLE IF NOT EXISTS comments (
   body       TEXT NOT NULL CHECK (length(trim(body)) > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS reports (
+  id          BIGSERIAL PRIMARY KEY,
+  reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  target_type TEXT NOT NULL CHECK (target_type IN ('build', 'comment')),
+  build_id    UUID REFERENCES builds(id) ON DELETE CASCADE,
+  comment_id  INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+  reason      TEXT NOT NULL CHECK (length(trim(reason)) BETWEEN 1 AND 500),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (
+    (target_type = 'build' AND build_id IS NOT NULL AND comment_id IS NULL)
+    OR (target_type = 'comment' AND comment_id IS NOT NULL AND build_id IS NULL)
+  )
+);
+CREATE INDEX IF NOT EXISTS idx_reports_newest ON reports(created_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_reports_build ON reports(build_id) WHERE target_type = 'build';
+CREATE INDEX IF NOT EXISTS idx_reports_comment ON reports(comment_id) WHERE target_type = 'comment';
 
 CREATE TABLE IF NOT EXISTS favorites (
   user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
